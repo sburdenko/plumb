@@ -36,6 +36,7 @@ public sealed partial class App : Application
                     new IfcConvertRunner(IfcConvertRunner.DefaultExecutablePath, GeometryTimeout, loggerFactory.CreateLogger<IfcConvertRunner>())),
                 new StorageFilePickerService(window),
                 new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
+                new ViewerLauncher(loggerFactory.CreateLogger<ViewerLauncher>()),
                 loggerFactory.CreateLogger<MainWindowViewModel>());
             window.DataContext = viewModel;
 

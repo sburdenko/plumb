@@ -16,6 +16,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IImportService _importService;
     private readonly IFilePickerService _filePicker;
     private readonly IFileRevealer _revealer;
+    private readonly IViewerLauncher _viewer;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly OpenCommands _open;
 
@@ -23,11 +24,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IImportService importService,
         IFilePickerService filePicker,
         IFileRevealer revealer,
+        IViewerLauncher viewer,
         ILogger<MainWindowViewModel> logger)
     {
         _importService = importService;
         _filePicker = filePicker;
         _revealer = revealer;
+        _viewer = viewer;
         _logger = logger;
         _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand);
         CurrentState = new EmptyStateViewModel(_open, errorMessage: null);
@@ -111,7 +114,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private ViewModelBase NextState(ImportResult result, ViewModelBase previous) => result switch
     {
-        ImportResult.Success success => new LoadedViewModel(success, _open, _revealer),
+        ImportResult.Success success => new LoadedViewModel(success, _open, _revealer, _viewer),
         ImportResult.Failure { Error: ImportError.Cancelled } => previous is LoadedViewModel
             ? previous
             : new EmptyStateViewModel(_open, errorMessage: null),
