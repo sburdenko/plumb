@@ -6,21 +6,69 @@
         x:Class="Plumb.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Plumb"
-        Width="1200" Height="800"
-        MinWidth="720" MinHeight="480"
+        Icon="/Assets/plumb.ico"
+        Width="1440" Height="900"
+        MinWidth="1100" MinHeight="680"
         behaviors:FileDrop.Command="{Binding OpenPathCommand}">
 
-    <Window.DataTemplates>
-        <DataTemplate DataType="vm:EmptyStateViewModel">
-            <views:EmptyStateView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:ImportingViewModel">
-            <views:ImportingView />
-        </DataTemplate>
-        <DataTemplate DataType="vm:LoadedViewModel">
-            <views:LoadedView />
-        </DataTemplate>
-    </Window.DataTemplates>
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenIfcCommand}" />
+        <KeyBinding Gesture="Meta+O" Command="{Binding OpenIfcCommand}" />
+    </Window.KeyBindings>
 
-    <ContentControl Content="{Binding CurrentState}" />
+    <Window.Styles>
+        <!-- While a file is dragged over the window, the empty state frames itself and changes its heading. -->
+        <Style Selector="Window.dragover Border#DropFrame">
+            <Setter Property="BorderBrush" Value="{StaticResource Plumb.AccentBrush}" />
+        </Style>
+        <Style Selector="Window.dragover TextBlock#OpenHeading">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="Window.dragover TextBlock#ReleaseHeading">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="48,*,28">
+        <Border Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,2">
+            <Grid ColumnDefinitions="Auto,*" Margin="14,0">
+                <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                    <views:PlumbMark Width="22" Height="22" />
+                    <TextBlock Text="Plumb" FontSize="18" FontWeight="ExtraBold" LetterSpacing="-0.54" VerticalAlignment="Center" />
+                </StackPanel>
+                <ContentControl Grid.Column="1" Margin="24,0,0,0" Content="{Binding CurrentState}">
+                    <ContentControl.DataTemplates>
+                        <DataTemplate DataType="vm:LoadedViewModel"><views:LoadedTopBar /></DataTemplate>
+                        <DataTemplate DataType="vm:ViewModelBase"><Panel /></DataTemplate>
+                    </ContentControl.DataTemplates>
+                </ContentControl>
+            </Grid>
+        </Border>
+
+        <ContentControl Grid.Row="1" Content="{Binding CurrentState}">
+            <ContentControl.DataTemplates>
+                <DataTemplate DataType="vm:EmptyStateViewModel"><views:EmptyStateView /></DataTemplate>
+                <DataTemplate DataType="vm:ImportingViewModel"><views:ImportingView /></DataTemplate>
+                <DataTemplate DataType="vm:FailedViewModel"><views:FailedView /></DataTemplate>
+                <DataTemplate DataType="vm:LoadedViewModel"><views:LoadedView /></DataTemplate>
+            </ContentControl.DataTemplates>
+        </ContentControl>
+
+        <Border Grid.Row="2" Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,2,0,0">
+            <ContentControl Content="{Binding CurrentState}" TextElement.FontSize="12" TextElement.Foreground="{StaticResource Plumb.TextDimBrush}">
+                <ContentControl.DataTemplates>
+                    <DataTemplate DataType="vm:LoadedViewModel"><views:LoadedStatusBar /></DataTemplate>
+                    <DataTemplate DataType="vm:ImportingViewModel">
+                        <TextBlock Margin="14,0" VerticalAlignment="Center" Text="{Binding FileName, StringFormat='Working on {0}…'}" />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:FailedViewModel">
+                        <TextBlock Margin="14,0" VerticalAlignment="Center" Text="Import failed" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                    </DataTemplate>
+                    <DataTemplate DataType="vm:EmptyStateViewModel">
+                        <TextBlock Margin="14,0" VerticalAlignment="Center" Text="No model open" />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
+        </Border>
+    </Grid>
 </Window>

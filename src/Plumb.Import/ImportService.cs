@@ -51,6 +51,7 @@ public sealed class ImportService : IImportService
                 return invalid;
             }
 
+            progress.Report(new ImportProgress(ImportStep.Snapshot, 0));
             var prepared = PrepareDraft(ifcPath, draft, cancellationToken);
             return prepared switch
             {

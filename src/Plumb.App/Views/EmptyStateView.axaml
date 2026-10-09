@@ -1,34 +1,25 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Plumb.App.ViewModels"
+             xmlns:views="using:Plumb.App.Views"
              x:Class="Plumb.App.Views.EmptyStateView"
              x:DataType="vm:EmptyStateViewModel">
-    <Grid Margin="32">
-        <Rectangle Stroke="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-                   StrokeThickness="2"
-                   StrokeDashArray="6,4"
-                   RadiusX="12" RadiusY="12" />
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
-            <TextBlock Text="Drop an IFC file here"
-                       FontSize="28"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="or a .plumb package saved by a previous import"
-                       Opacity="0.6"
-                       HorizontalAlignment="Center" />
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-                <Button Content="Open IFC…"
-                        Command="{Binding Open.OpenIfc}"
-                        Classes="accent" />
-                <Button Content="Open Package…"
-                        Command="{Binding Open.OpenPackage}" />
+    <Panel Background="{StaticResource Plumb.InkBrush}">
+        <Border Name="DropFrame" BorderBrush="Transparent" BorderThickness="2" />
+        <StackPanel Margin="96,120,96,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <views:PlumbMark Width="64" Height="64" HorizontalAlignment="Left" />
+            <Panel Margin="0,28,0,0">
+                <TextBlock Name="OpenHeading" Text="Open a building model" FontSize="42" FontWeight="ExtraBold" LetterSpacing="-0.84" />
+                <TextBlock Name="ReleaseHeading" Text="Release to open" FontSize="42" FontWeight="ExtraBold" LetterSpacing="-0.84" IsVisible="False" />
+            </Panel>
+            <TextBlock Margin="0,12,0,0" Classes="muted" FontSize="15" MaxWidth="520" HorizontalAlignment="Left" TextWrapping="Wrap"
+                       Text="Drop an .ifc or .plumb file here, or open one from disk. IFC2X3 and IFC4." />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,28,0,0">
+                <Button Classes="primary" Content="Open IFC…" Command="{Binding Open.OpenIfc}" />
+                <Button Classes="secondary" Content="Open Package…" Command="{Binding Open.OpenPackage}" />
             </StackPanel>
-            <TextBlock Text="{Binding ErrorMessage}"
-                       IsVisible="{Binding HasError}"
-                       Foreground="{DynamicResource PlumbErrorBrush}"
-                       TextWrapping="Wrap"
-                       MaxWidth="520"
-                       TextAlignment="Center"
-                       HorizontalAlignment="Center" />
+            <TextBlock Margin="0,16,0,0" Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" MaxWidth="520" HorizontalAlignment="Left"
+                       TextWrapping="Wrap" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
         </StackPanel>
-    </Grid>
+    </Panel>
 </UserControl>

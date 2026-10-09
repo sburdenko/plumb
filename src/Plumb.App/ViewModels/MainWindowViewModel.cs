@@ -32,7 +32,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _revealer = revealer;
         _viewer = viewer;
         _logger = logger;
-        _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand);
+        _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand, OpenPathCommand);
         CurrentState = new EmptyStateViewModel(_open, errorMessage: null);
     }
 
@@ -64,14 +64,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
 
         var previous = CurrentState;
+        var opensPackage = PackageLayout.IsPackagePath(path);
         using var cancellation = new CancellationTokenSource();
-        var importing = new ImportingViewModel(Path.GetFileName(Path.TrimEndingDirectorySeparator(path)), cancellation);
+        var importing = new ImportingViewModel(Path.GetFileName(Path.TrimEndingDirectorySeparator(path)), opensPackage, cancellation);
         CurrentState = importing;
 
         try
         {
+            var clock = Stopwatch.StartNew();
             var result = await LoadAsync(path, new Progress<ImportProgress>(importing.Report), cancellation.Token);
-            CurrentState = NextState(result, previous);
+            CurrentState = NextState(result, previous, path, opensPackage, clock.Elapsed);
         }
         catch (Exception ex)
         {
@@ -112,13 +114,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private ViewModelBase NextState(ImportResult result, ViewModelBase previous) => result switch
-    {
-        ImportResult.Success success => new LoadedViewModel(success, _open, _revealer, _viewer),
-        ImportResult.Failure { Error: ImportError.Cancelled } => previous is LoadedViewModel
-            ? previous
-            : new EmptyStateViewModel(_open, errorMessage: null),
-        ImportResult.Failure failure => new EmptyStateViewModel(_open, failure.Message),
-        _ => throw new UnreachableException(),
-    };
+    private ViewModelBase NextState(ImportResult result, ViewModelBase previous, string path, bool openedPackage, TimeSpan loadTime) =>
+        result switch
+        {
+            ImportResult.Success success => new LoadedViewModel(new LoadedModel(success, path, openedPackage, loadTime), _open, _revealer, _viewer),
+            ImportResult.Failure { Error: ImportError.Cancelled } => previous is LoadedViewModel
+                ? previous
+                : new EmptyStateViewModel(_open, errorMessage: null),
+            ImportResult.Failure failure => new FailedViewModel(path, failure.Message, _open),
+            _ => throw new UnreachableException(),
+        };
 }

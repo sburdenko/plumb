@@ -30,6 +30,7 @@ public sealed class FileDrop : AvaloniaObject
     private static void OnCommandChanged(Control control, AvaloniaPropertyChangedEventArgs args)
     {
         control.RemoveHandler(DragDrop.DragOverEvent, OnDragOver);
+        control.RemoveHandler(DragDrop.DragLeaveEvent, OnDragLeave);
         control.RemoveHandler(DragDrop.DropEvent, OnDrop);
 
         var hasCommand = args.NewValue is ICommand;
@@ -37,18 +38,27 @@ public sealed class FileDrop : AvaloniaObject
         if (hasCommand)
         {
             control.AddHandler(DragDrop.DragOverEvent, OnDragOver);
+            control.AddHandler(DragDrop.DragLeaveEvent, OnDragLeave);
             control.AddHandler(DragDrop.DropEvent, OnDrop);
         }
     }
 
+    /// <summary>The control gets this class while an accepted file is held over it, for styles to react to.</summary>
+    public const string DragOverClass = "dragover";
+
     private static void OnDragOver(object? sender, DragEventArgs e)
     {
-        e.DragEffects = TryGetAccepted(sender, e) is not null ? DragDropEffects.Copy : DragDropEffects.None;
+        var accepted = TryGetAccepted(sender, e) is not null;
+        e.DragEffects = accepted ? DragDropEffects.Copy : DragDropEffects.None;
+        (sender as Control)?.Classes.Set(DragOverClass, accepted);
         e.Handled = true;
     }
 
+    private static void OnDragLeave(object? sender, DragEventArgs e) => (sender as Control)?.Classes.Set(DragOverClass, false);
+
     private static void OnDrop(object? sender, DragEventArgs e)
     {
+        (sender as Control)?.Classes.Set(DragOverClass, false);
         if (TryGetAccepted(sender, e) is var (command, path))
         {
             command.Execute(path);

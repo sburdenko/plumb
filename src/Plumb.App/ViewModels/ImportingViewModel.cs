@@ -1,26 +1,48 @@
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Plumb.Core.Import;
 
 namespace Plumb.App.ViewModels;
 
+/// <summary>
+/// Shows the pipeline while an IFC file is imported or a package is opened: each step turns from pending
+/// to running to done as progress reports arrive.
+/// </summary>
 public sealed partial class ImportingViewModel : ViewModelBase
 {
-    private const string CancellingText = "Cancelling…";
+    private static readonly (ImportStep Step, string Name)[] ImportSteps =
+    [
+        (ImportStep.Validating, "Validate"),
+        (ImportStep.Snapshot, "Snapshot"),
+        (ImportStep.ReadingModel, "Read"),
+        (ImportStep.ConvertingGeometry, "Geometry"),
+        (ImportStep.WritingPackage, "Write"),
+        (ImportStep.Finalizing, "Publish"),
+    ];
+
+    private static readonly (ImportStep Step, string Name)[] OpenSteps = [(ImportStep.OpeningPackage, "Open package")];
 
     private readonly CancellationTokenSource _cancellation;
+    private readonly ImportStep[] _order;
+    private readonly Stopwatch _stepClock = Stopwatch.StartNew();
+    private int _current = -1;
 
-    public ImportingViewModel(string fileName, CancellationTokenSource cancellation)
+    public ImportingViewModel(string fileName, bool opensPackage, CancellationTokenSource cancellation)
     {
         FileName = fileName;
         _cancellation = cancellation;
-        StepText = DescribeStep(ImportStep.Validating);
+        Kicker = opensPackage ? "OPENING" : "IMPORTING";
+        var steps = opensPackage ? OpenSteps : ImportSteps;
+        _order = steps.Select(s => s.Step).ToArray();
+        Steps = steps.Select((s, i) => new PipelineStepViewModel(i + 1, s.Name)).ToList();
     }
+
+    public string Kicker { get; }
 
     public string FileName { get; }
 
-    [ObservableProperty]
-    public partial string StepText { get; private set; }
+    public IReadOnlyList<PipelineStepViewModel> Steps { get; }
 
     [ObservableProperty]
     public partial int Percent { get; private set; }
@@ -36,8 +58,34 @@ public sealed partial class ImportingViewModel : ViewModelBase
             return;
         }
 
-        StepText = DescribeStep(progress.Step);
         Percent = progress.Percent;
+        var index = Array.IndexOf(_order, progress.Step);
+        if (index > _current)
+        {
+            MoveTo(index);
+        }
+
+        if (progress.Percent >= 100 && _current == _order.Length - 1)
+        {
+            Steps[_current].Finish(_stepClock.Elapsed);
+        }
+    }
+
+    private void MoveTo(int index)
+    {
+        if (_current >= 0)
+        {
+            Steps[_current].Finish(_stepClock.Elapsed);
+        }
+
+        for (var skipped = _current + 1; skipped < index; skipped++)
+        {
+            Steps[skipped].Finish(TimeSpan.Zero);
+        }
+
+        _current = index;
+        _stepClock.Restart();
+        Steps[index].Start();
     }
 
     private bool CanCancel() => !IsCancelling;
@@ -46,18 +94,6 @@ public sealed partial class ImportingViewModel : ViewModelBase
     private void Cancel()
     {
         IsCancelling = true;
-        StepText = CancellingText;
         _cancellation.Cancel();
     }
-
-    private static string DescribeStep(ImportStep step) => step switch
-    {
-        ImportStep.Validating => "Checking file…",
-        ImportStep.ReadingModel => "Reading IFC…",
-        ImportStep.ConvertingGeometry => "Building 3D geometry…",
-        ImportStep.WritingPackage => "Saving package…",
-        ImportStep.Finalizing => "Finishing…",
-        ImportStep.OpeningPackage => "Opening package…",
-        _ => throw new ArgumentOutOfRangeException(nameof(step), step, "Unknown import step."),
-    };
 }

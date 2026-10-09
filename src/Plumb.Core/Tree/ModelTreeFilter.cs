@@ -5,7 +5,7 @@ using System.Linq;
 namespace Plumb.Core.Tree
 {
     /// <summary>
-    /// Prunes a tree to nodes whose name or IFC type contains the query, keeping their ancestors.
+    /// Prunes a tree to nodes whose name, IFC type or GlobalId contains the query, keeping their ancestors.
     /// A matching node keeps its whole subtree.
     /// </summary>
     public static class ModelTreeFilter
@@ -30,7 +30,7 @@ namespace Plumb.Core.Tree
 
         private static ElementNode? FilterElement(ElementNode node, string term)
         {
-            if (Contains(node.Element.Name, term) || Contains(node.Element.IfcType, term))
+            if (Contains(node.Element.Name, term) || Contains(node.Element.IfcType, term) || Contains(node.Element.GlobalId, term))
             {
                 return node;
             }

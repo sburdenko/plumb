@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Plumb.App.ViewModels;
 
 /// <summary>
-/// The "Open IFC" and "Open package" buttons, shared by every window state that shows them.
+/// The ways to open a model, shared by every window state that offers them.
 /// </summary>
-public sealed record OpenCommands(IAsyncRelayCommand OpenIfc, IAsyncRelayCommand OpenPackage);
+/// <param name="OpenPath">Opens a .plumb package as is, or imports anything else as IFC.</param>
+public sealed record OpenCommands(IAsyncRelayCommand OpenIfc, IAsyncRelayCommand OpenPackage, IAsyncRelayCommand<string?> OpenPath);

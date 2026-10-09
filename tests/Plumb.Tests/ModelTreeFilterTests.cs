@@ -57,6 +57,15 @@ public sealed class ModelTreeFilterTests
     }
 
     [Test]
+    public void MatchesGlobalId()
+    {
+        var result = ModelTreeFilter.Apply(_tree, "d1");
+
+        var level2 = (ElementNode)((ElementNode)result.Single()).Children.Single();
+        Assert.That(level2.Label, Is.EqualTo("Level 2"));
+    }
+
+    [Test]
     public void NoMatchReturnsEmpty()
     {
         Assert.That(ModelTreeFilter.Apply(_tree, "zzz"), Is.Empty);

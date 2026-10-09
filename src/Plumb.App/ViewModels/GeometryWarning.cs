@@ -8,6 +8,17 @@ namespace Plumb.App.ViewModels;
 /// </summary>
 public static class GeometryWarning
 {
+    /// <summary>The explanation under the "3D geometry was not built" heading in the viewport.</summary>
+    public static string Reason(GeometryState.NotBuilt notBuilt) => notBuilt.Error switch
+    {
+        GeometryError.ConverterMissing => "IfcConvert was not found next to the app. The tree and properties are open and complete.",
+        GeometryError.ConverterFailed => "IfcConvert could not convert this file. The tree and properties are open and complete.",
+        GeometryError.Timeout => "IfcConvert took too long and was stopped. The tree and properties are open and complete.",
+        GeometryError.FileMissing => "This package was saved without model.glb. Import the IFC file again to add it.",
+        GeometryError.Unknown => "The geometry could not be built. The tree and properties are open and complete.",
+        _ => throw new UnreachableException(),
+    };
+
     public static string For(GeometryState.NotBuilt notBuilt)
     {
         var message = notBuilt.Error switch
