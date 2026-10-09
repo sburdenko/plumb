@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/sburdenko/plumb/actions/workflows/ci.yml/badge.svg)](https://github.com/sburdenko/plumb/actions/workflows/ci.yml)
 
-Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial structure and the properties of every element, and keep the result, 3D geometry included, as a `.plumb` package that reopens in milliseconds.
+Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial structure and the properties of every element, keep the result as a `.plumb` package that reopens in milliseconds, and inspect it in 3D: click any element to see what it is.
 
 ```
               ________________________
@@ -29,6 +29,8 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
   <img alt="Plumb with the Duplex model open: spatial tree on the left, properties of the selected wall on the right" src="docs/plumb-light.png">
 </picture>
 
+![The Unity viewer with Duplex open and an exterior wall selected](docs/viewer.png)
+
 ## Features
 
 - Opens IFC2X3 and IFC4 files by drag and drop or from a file dialog.
@@ -36,6 +38,7 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.
 - Filters the tree by element name or IFC type.
+- Opens the package in a Unity viewer: orbit, pan and zoom, click an element to highlight it and see its name, type, storey and GlobalId, press F to frame it.
 - Converts the geometry to binary glTF (`model.glb`) with IfcOpenShell's IfcConvert. Every mesh node is named by its IFC GlobalId, so a 3D viewer can map a click back to the element and its properties.
 - Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely. When that folder is read-only, the model still opens and the app shows why it was not saved.
 - Imports in the background with progress and cancellation. A cancelled or failed import never leaves a half-written package behind.
@@ -88,8 +91,19 @@ Every project does one job and references only what that job needs. Each box dep
 | `Plumb.Package` | Writes records into a `.plumb` folder and reads them back. | SQLite |
 | `Plumb.Import` | Runs the steps in order, reports progress, turns every failure into a result. | |
 | `Plumb.App` | Drag and drop, tree, property panel. | Avalonia |
+| `viewer/` | Unity 6 project: loads `model.glb`, orbit camera, picks elements by GlobalId. | glTFast |
 
 xBIM, IfcConvert and SQLite each appear in exactly one project, so any of them can be replaced without touching the rest.
+
+The 3D viewer is a second program, a Unity 6 project in `viewer/`. The two programs share nothing but the package folder:
+
+```
+Plumb  --- Open in 3D: PlumbViewer --package Duplex.plumb --->  Plumb Viewer (Unity)
+                                                                  reads model.glb with glTFast
+                                                                  reads elements.json for labels
+```
+
+A click casts a ray, takes the name of the glTF node it hits, which is the element's IFC GlobalId, and looks that id up in `elements.json`. The viewer never opens SQLite.
 
 ### Import pipeline
 
@@ -124,6 +138,9 @@ The manifest is written last, so a folder without one was never finished. Reader
 - **Errors are values.** The pipeline returns `ImportResult.Success` or `ImportResult.Failure` with an `ImportError` code and never throws for expected failures. xBIM wraps exceptions thrown from its progress callback, so cancellation is detected from the token rather than the exception type.
 - **Secondary steps are states, not errors.** A successful import carries `PackageState.Saved` or `NotSaved`, and a saved package carries `GeometryState.Built` or `NotBuilt`. The UI reads the warning from that state; nothing is a boolean flag.
 - **External tools run as separate processes.** IfcConvert (LGPL) is started per import with a time limit, its output is drained while it runs, and its whole process tree is killed on cancel or timeout.
+- **The GlobalId is the join key.** IfcConvert names every glTF node by GlobalId, the package indexes elements by GlobalId, and tests check that every node is an element. That is what lets a click in 3D find its data.
+- **No coroutines in the viewer.** Loading is a state machine in `Update` that polls glTFast's tasks, so the flow is explicit and easy to step through.
+- **Builds check themselves.** `--select <GlobalId> --screenshot <png>` makes the viewer load a package, select an element, save one frame and quit, which is how the screenshot above was taken.
 - **Window states are types.** Empty, importing and loaded are separate view models, and the main view model swaps between them instead of toggling flags.
 - **Flat records, tree on demand.** Import produces two flat lists keyed by IFC GlobalId, which map one to one onto the SQLite tables. The tree is built from parent ids, and search returns a new pruned tree without touching the original.
 - **No Windows-only storage.** Models open with xBIM's `MemoryModel`, because the default `IfcStore` provider may pick the Esent database, which only runs on Windows.
@@ -140,6 +157,14 @@ dotnet run --project src/Plumb.App
 
 `fetch-ifcconvert.sh` downloads the pinned IfcConvert build for your OS and checks its SHA-256; the build copies it next to the app. Without it the app still runs and shows that 3D geometry was not built.
 
+To use Open in 3D, build the viewer once. This needs Unity 6000.6.4f1 with macOS build support, installed through Unity Hub:
+
+```bash
+tools/build-viewer.sh
+```
+
+The viewer lands in `viewer-build/` and the next `dotnet build` copies it next to the app. Set `PLUMB_VIEWER` to use a viewer from another location.
+
 To open a file or package on start, pass its path:
 
 ```bash
@@ -155,11 +180,17 @@ dotnet test
 
 The suite imports the Duplex architecture model and checks the tree, storey order, units and property integrity. It writes and reopens packages, replaces them, cancels mid-write and verifies that no draft is left behind. With the real IfcConvert it checks that every glTF node is an element of the package, that a timeout or cancel stops the process, and that a missing converter still loads the model.
 
+The viewer has its own Unity EditMode tests for argument parsing, the element index and click detection:
+
+```bash
+Unity -batchmode -projectPath viewer -runTests -testPlatform EditMode -testResults viewer-tests.xml
+```
+
 The Duplex model is not stored in the repository because its source publishes no license. `fetch-samples.sh` downloads it from a pinned commit of [youshengCode/IfcSampleFiles](https://github.com/youshengCode/IfcSampleFiles) and verifies its SHA-256.
 
 ## Built with
 
-.NET 10, Avalonia 12, CommunityToolkit.Mvvm, [xBIM Essentials](https://github.com/xBimTeam/XbimEssentials) 6, [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) IfcConvert 0.9, Microsoft.Data.Sqlite, NUnit.
+.NET 10, Avalonia 12, CommunityToolkit.Mvvm, Unity 6 with [glTFast](https://github.com/Unity-Technologies/com.unity.cloud.gltfast) 6.20, [xBIM Essentials](https://github.com/xBimTeam/XbimEssentials) 6, [IfcOpenShell](https://github.com/IfcOpenShell/IfcOpenShell) IfcConvert 0.9, Microsoft.Data.Sqlite, NUnit.
 
 ## License
 
