@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Plumb.App.ViewModels"
+        xmlns:views="using:Plumb.App.Views"
+        xmlns:behaviors="using:Plumb.App.Behaviors"
+        x:Class="Plumb.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Plumb"
+        Width="1200" Height="800"
+        MinWidth="720" MinHeight="480"
+        behaviors:FileDrop.Command="{Binding ImportFileCommand}">
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:EmptyStateViewModel">
+            <views:EmptyStateView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:ImportingViewModel">
+            <views:ImportingView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:LoadedViewModel">
+            <views:LoadedView />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <ContentControl Content="{Binding CurrentState}" />
+</Window>

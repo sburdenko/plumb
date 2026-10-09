@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Plumb.Import\Plumb.Import.csproj" />
+    <ProjectReference Include="..\..\src\Plumb.App\Plumb.App.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\samples\Duplex.ifc" Link="Samples\Duplex.ifc" CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('..\..\samples\Duplex.ifc')" />
+  </ItemGroup>
+</Project>

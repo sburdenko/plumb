@@ -1,0 +1,12 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plumb.App.ViewModels"
+             x:Class="Plumb.App.Views.ImportingView"
+             x:DataType="vm:ImportingViewModel">
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Width="420">
+        <TextBlock Text="{Binding FileName}" FontSize="20" HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding StepText}" Opacity="0.7" HorizontalAlignment="Center" />
+        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent}" ShowProgressText="True" />
+        <Button Content="Cancel" Command="{Binding CancelCommand}" HorizontalAlignment="Center" />
+    </StackPanel>
+</UserControl>

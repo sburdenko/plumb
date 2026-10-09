@@ -1,0 +1,96 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plumb.App.ViewModels"
+             x:Class="Plumb.App.Views.LoadedView"
+             x:DataType="vm:LoadedViewModel">
+    <DockPanel>
+        <Border DockPanel.Dock="Top"
+                Padding="16,10"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding FileName}" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Summary}" Opacity="0.7" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="Open IFC…"
+                        Command="{Binding BrowseCommand}"
+                        VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="2*,Auto,3*">
+            <DockPanel Margin="12">
+                <TextBox DockPanel.Dock="Top"
+                         Margin="0,0,0,8"
+                         PlaceholderText="Search by name or type"
+                         Text="{Binding SearchText}" />
+                <TreeView ItemsSource="{Binding Nodes}"
+                          SelectedItem="{Binding SelectedNode, Mode=TwoWay}">
+                    <TreeView.Styles>
+                        <Style Selector="TreeViewItem" x:DataType="vm:TreeNodeViewModel">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        </Style>
+                    </TreeView.Styles>
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate DataType="vm:TreeNodeViewModel" ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding Label}" />
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Width="4" ResizeDirection="Columns" />
+
+            <Panel Grid.Column="2">
+                <TextBlock Text="Select an element to see its properties"
+                           Opacity="0.6"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding SelectedElement, Converter={x:Static ObjectConverters.IsNull}}" />
+                <ScrollViewer DataContext="{Binding SelectedElement}"
+                              IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Margin="16,12" Spacing="12" x:DataType="vm:ElementDetailsViewModel">
+                        <StackPanel Spacing="4">
+                            <SelectableTextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" Opacity="0.8">
+                                <TextBlock Text="Type" Margin="0,0,16,0" />
+                                <SelectableTextBlock Grid.Column="1" Text="{Binding IfcType}" />
+                                <TextBlock Grid.Row="1" Text="Storey" Margin="0,0,16,0" />
+                                <SelectableTextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Storey}" />
+                                <TextBlock Grid.Row="2" Text="GlobalId" Margin="0,0,16,0" />
+                                <SelectableTextBlock Grid.Row="2" Grid.Column="1" Text="{Binding GlobalId}" FontFamily="monospace" />
+                            </Grid>
+                        </StackPanel>
+
+                        <TextBlock Text="No properties" Opacity="0.6"
+                                   IsVisible="{Binding !HasProperties}" />
+
+                        <ItemsControl ItemsSource="{Binding Groups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:PropertyGroupViewModel">
+                                    <Expander Header="{Binding Name}"
+                                              IsExpanded="True"
+                                              HorizontalAlignment="Stretch"
+                                              Margin="0,0,0,6">
+                                        <ItemsControl ItemsSource="{Binding Rows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:PropertyRowViewModel">
+                                                    <Grid ColumnDefinitions="2*,3*" Margin="0,2">
+                                                        <TextBlock Text="{Binding Name}" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,12,0" />
+                                                        <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Expander>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Panel>
+        </Grid>
+    </DockPanel>
+</UserControl>

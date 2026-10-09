@@ -1,0 +1,48 @@
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
+using Plumb.App.Logging;
+using Plumb.App.Services;
+using Plumb.App.ViewModels;
+using Plumb.App.Views;
+using Plumb.Import;
+using Plumb.Import.Xbim;
+
+namespace Plumb.App;
+
+public sealed partial class App : Application
+{
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var loggerFactory = AppLogging.CreateFactory();
+            var logger = loggerFactory.CreateLogger<App>();
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+                logger.LogCritical(e.ExceptionObject as Exception, "Unhandled exception");
+            XbimSetup.Configure(loggerFactory);
+
+            var window = new MainWindow();
+            var viewModel = new MainWindowViewModel(
+                new ImportService(loggerFactory.CreateLogger<ImportService>()),
+                new StorageFilePickerService(window),
+                loggerFactory.CreateLogger<MainWindowViewModel>());
+            window.DataContext = viewModel;
+
+            desktop.MainWindow = window;
+            desktop.Exit += (_, _) => loggerFactory.Dispose();
+            logger.LogInformation("Plumb started");
+
+            if (desktop.Args is [var initialFile, ..])
+            {
+                Dispatcher.UIThread.Post(() => viewModel.ImportFileCommand.Execute(initialFile));
+            }
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+}

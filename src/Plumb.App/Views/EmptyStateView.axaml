@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Plumb.App.ViewModels"
+             x:Class="Plumb.App.Views.EmptyStateView"
+             x:DataType="vm:EmptyStateViewModel">
+    <Grid Margin="32">
+        <Rectangle Stroke="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                   StrokeThickness="2"
+                   StrokeDashArray="6,4"
+                   RadiusX="12" RadiusY="12" />
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+            <TextBlock Text="Drop an IFC file here"
+                       FontSize="28"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="or"
+                       Opacity="0.6"
+                       HorizontalAlignment="Center" />
+            <Button Content="Open IFC…"
+                    Command="{Binding BrowseCommand}"
+                    HorizontalAlignment="Center"
+                    Classes="accent" />
+            <TextBlock Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding HasError}"
+                       Foreground="{DynamicResource PlumbErrorBrush}"
+                       TextWrapping="Wrap"
+                       MaxWidth="520"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>
