@@ -24,12 +24,9 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
     V
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/plumb-dark.png">
-  <img alt="Plumb with the Duplex model open: spatial tree on the left, properties of the selected wall on the right" src="docs/plumb-light.png">
-</picture>
+![Plumb with the Duplex model open: spatial tree on the left, properties of the selected wall on the right](docs/plumb.png)
 
-![The Unity viewer with Duplex open and an exterior wall selected](docs/viewer.png)
+![The Unity viewer with the same wall selected](docs/viewer.png)
 
 ## Features
 
@@ -37,11 +34,11 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Shows the spatial structure: project, site, building and storeys sorted by elevation, with elements grouped by IFC type. Parts of aggregates, such as stair flights, appear under their parent element and keep its storey.
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.
-- Filters the tree by element name or IFC type.
+- Filters the tree by element name, IFC type or GlobalId.
 - Opens the package in a Unity viewer: orbit, pan and zoom, click an element to highlight it and see its name, type, storey and GlobalId, press F to frame it.
 - Converts the geometry to binary glTF (`model.glb`) with IfcOpenShell's IfcConvert. Every mesh node is named by its IFC GlobalId, so a 3D viewer can map a click back to the element and its properties.
 - Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely. When that folder is read-only, the model still opens and the app shows why it was not saved.
-- Imports in the background with progress and cancellation. A cancelled or failed import never leaves a half-written package behind.
+- Imports in the background, showing each step of the pipeline with its time, and can be cancelled at any point. A cancelled or failed import never leaves a half-written package behind.
 - Keeps the model when a secondary step fails: if the package cannot be saved, or IfcConvert is missing, fails or times out, the tree and properties still open and the app shows why.
 
 | Duplex sample: 2.4 MB, 246 elements, 12,713 property values | Time |
