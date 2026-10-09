@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Graphite palette. Accent red is reserved for the primary action, the selection and the logo bob. -->
+  <Color x:Key="Plumb.Ink">#201E1D</Color>
+  <Color x:Key="Plumb.Panel">#2D2B2B</Color>
+  <Color x:Key="Plumb.Rule">#444141</Color>
+  <Color x:Key="Plumb.Border">#605D5D</Color>
+  <Color x:Key="Plumb.Text">#F8F4F4</Color>
+  <Color x:Key="Plumb.TextTree">#EAE7E7</Color>
+  <Color x:Key="Plumb.TextSoft">#D7D3D3</Color>
+  <Color x:Key="Plumb.TextDim">#BAB6B6</Color>
+  <Color x:Key="Plumb.TextMuted">#9B9797</Color>
+  <Color x:Key="Plumb.Accent">#EC3013</Color>
+  <Color x:Key="Plumb.AccentHover">#DD2B0F</Color>
+  <Color x:Key="Plumb.AccentPressed">#AE1800</Color>
+  <Color x:Key="Plumb.AccentOnDark">#FF9783</Color>
+  <Color x:Key="Plumb.PrimaryLabel">#F3F2F2</Color>
+
+  <SolidColorBrush x:Key="Plumb.InkBrush" Color="{StaticResource Plumb.Ink}" />
+  <SolidColorBrush x:Key="Plumb.PanelBrush" Color="{StaticResource Plumb.Panel}" />
+  <SolidColorBrush x:Key="Plumb.RuleBrush" Color="{StaticResource Plumb.Rule}" />
+  <SolidColorBrush x:Key="Plumb.BorderBrush" Color="{StaticResource Plumb.Border}" />
+  <SolidColorBrush x:Key="Plumb.TextBrush" Color="{StaticResource Plumb.Text}" />
+  <SolidColorBrush x:Key="Plumb.TextTreeBrush" Color="{StaticResource Plumb.TextTree}" />
+  <SolidColorBrush x:Key="Plumb.TextSoftBrush" Color="{StaticResource Plumb.TextSoft}" />
+  <SolidColorBrush x:Key="Plumb.TextDimBrush" Color="{StaticResource Plumb.TextDim}" />
+  <SolidColorBrush x:Key="Plumb.TextMutedBrush" Color="{StaticResource Plumb.TextMuted}" />
+  <SolidColorBrush x:Key="Plumb.AccentBrush" Color="{StaticResource Plumb.Accent}" />
+  <SolidColorBrush x:Key="Plumb.AccentHoverBrush" Color="{StaticResource Plumb.AccentHover}" />
+  <SolidColorBrush x:Key="Plumb.AccentPressedBrush" Color="{StaticResource Plumb.AccentPressed}" />
+  <SolidColorBrush x:Key="Plumb.AccentOnDarkBrush" Color="{StaticResource Plumb.AccentOnDark}" />
+  <SolidColorBrush x:Key="Plumb.PrimaryLabelBrush" Color="{StaticResource Plumb.PrimaryLabel}" />
+  <!-- #F8F4F4 at 6%, 7% and 14% -->
+  <SolidColorBrush x:Key="Plumb.RowHoverBrush" Color="#0FF8F4F4" />
+  <SolidColorBrush x:Key="Plumb.FillHoverBrush" Color="#12F8F4F4" />
+  <SolidColorBrush x:Key="Plumb.FillPressedBrush" Color="#24F8F4F4" />
+
+  <FontFamily x:Key="Plumb.Font">avares://Plumb.App/Assets/Fonts#Archivo</FontFamily>
+
+  <!-- 1px lines every 40px behind the viewport -->
+  <DrawingBrush x:Key="Plumb.GridBrush" TileMode="Tile" DestinationRect="0,0,40,40" SourceRect="0,0,40,40">
+    <DrawingBrush.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="{StaticResource Plumb.InkBrush}" Geometry="M0,0 H40 V40 H0 Z" />
+        <GeometryDrawing Brush="{StaticResource Plumb.PanelBrush}" Geometry="M0,0 H40 V1 H0 Z M0,0 H1 V40 H0 Z" />
+      </DrawingGroup>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+
+  <!-- Logo mark in a 48x48 box: bar and line in text colour, bob in accent. -->
+  <StreamGeometry x:Key="Plumb.Mark.Line">M10,2 H38 V6 H10 Z M22.5,5 H25.5 V20 H22.5 Z</StreamGeometry>
+  <StreamGeometry x:Key="Plumb.Mark.Bob">M24,17 L34,30 L24,46 L14,30 Z</StreamGeometry>
+</ResourceDictionary>

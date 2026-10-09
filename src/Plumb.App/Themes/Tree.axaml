@@ -1,0 +1,60 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:Plumb.App.Controls"
+                    xmlns:vm="using:Plumb.App.ViewModels">
+
+  <!-- Chevron slot of a tree row: right when collapsed, down when expanded. -->
+  <ControlTheme x:Key="Plumb.TreeChevron" TargetType="ToggleButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" Width="14" Height="28">
+          <controls:LucideIcon Name="Glyph" Data="{StaticResource Icon.ChevronRight}" Size="12" StrokeThickness="3"
+                               Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:checked /template/ controls|LucideIcon#Glyph">
+      <Setter Property="Data" Value="{StaticResource Icon.ChevronDown}" />
+    </Style>
+  </ControlTheme>
+
+  <!-- A 28px tree row. Indentation comes from the row's level; selection fills the whole row in accent. -->
+  <ControlTheme x:Key="Plumb.TreeItem" TargetType="TreeViewItem" x:DataType="vm:TreeNodeViewModel">
+    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate x:DataType="vm:TreeNodeViewModel">
+        <StackPanel>
+          <Border Name="PART_Header" Height="28" Background="Transparent">
+            <Grid ColumnDefinitions="Auto,14,6,*">
+              <Border Width="{Binding Indent}" />
+              <ToggleButton Grid.Column="1" Name="PART_Chevron" Theme="{StaticResource Plumb.TreeChevron}"
+                            IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}" />
+              <ContentPresenter Grid.Column="3" Name="PART_HeaderPresenter" VerticalAlignment="Center"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" />
+            </Grid>
+          </Border>
+          <ItemsPresenter Name="PART_ItemsPresenter" IsVisible="{TemplateBinding IsExpanded}"
+                          ItemsPanel="{TemplateBinding ItemsPanel}" />
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:empty /template/ ToggleButton#PART_Chevron">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="^ /template/ Border#PART_Header:pointerover">
+      <Setter Property="Background" Value="{StaticResource Plumb.RowHoverBrush}" />
+    </Style>
+    <Style Selector="^:selected /template/ Border#PART_Header">
+      <Setter Property="Background" Value="{StaticResource Plumb.AccentBrush}" />
+    </Style>
+    <Style Selector="^:selected /template/ ToggleButton#PART_Chevron">
+      <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

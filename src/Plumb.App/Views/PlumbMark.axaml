@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Plumb.App.Views.PlumbMark">
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="48" Height="48">
+            <Path Data="{StaticResource Plumb.Mark.Line}" Fill="{StaticResource Plumb.TextBrush}" />
+            <Path Data="{StaticResource Plumb.Mark.Bob}" Fill="{StaticResource Plumb.AccentBrush}" />
+        </Canvas>
+    </Viewbox>
+</UserControl>

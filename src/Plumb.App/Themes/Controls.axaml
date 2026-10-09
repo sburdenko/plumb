@@ -1,0 +1,198 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Plumb.App.Controls">
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource Plumb.InkBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+    <Setter Property="FontFamily" Value="{StaticResource Plumb.Font}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <!-- Zero radius everywhere -->
+  <Style Selector="Button"><Setter Property="CornerRadius" Value="0" /></Style>
+  <Style Selector="ToggleButton"><Setter Property="CornerRadius" Value="0" /></Style>
+  <Style Selector="TextBox"><Setter Property="CornerRadius" Value="0" /></Style>
+  <Style Selector="ToolTip"><Setter Property="CornerRadius" Value="0" /></Style>
+  <Style Selector="ProgressBar"><Setter Property="CornerRadius" Value="0" /></Style>
+  <Style Selector="FlyoutPresenter"><Setter Property="CornerRadius" Value="0" /></Style>
+
+  <!-- Focus: 2px accent outline, 2px away from the control -->
+  <Style Selector="Button, ToggleButton, TreeViewItem">
+    <Setter Property="FocusAdorner">
+      <FocusAdornerTemplate>
+        <Border BorderBrush="{StaticResource Plumb.AccentBrush}" BorderThickness="2" Margin="-4" />
+      </FocusAdornerTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Text roles -->
+  <Style Selector="TextBlock.caps">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="1.1" />
+  </Style>
+  <Style Selector="TextBlock.muted, SelectableTextBlock.muted">
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.dim">
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextDimBrush}" />
+  </Style>
+  <Style Selector="TextBlock.kicker">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="1.1" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.AccentOnDarkBrush}" />
+  </Style>
+  <Style Selector="TextBlock.numbers, SelectableTextBlock.numbers">
+    <Setter Property="FontFeatures" Value="+tnum" />
+  </Style>
+
+  <!-- Buttons: flush-left labels, Archivo 800 14px -->
+  <Style Selector="Button.primary, Button.secondary">
+    <Setter Property="FontWeight" Value="ExtraBold" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{StaticResource Plumb.AccentBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.AccentBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.PrimaryLabelBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Plumb.AccentHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.AccentHoverBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.PrimaryLabelBrush}" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Plumb.AccentPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.AccentPressedBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.PrimaryLabelBrush}" />
+  </Style>
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.BorderBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+  <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Plumb.FillHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.BorderBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+  <Style Selector="Button.secondary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Plumb.FillPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.BorderBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+  <Style Selector="Button.primary:disabled, Button.secondary:disabled">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Plumb.AccentBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.PrimaryLabelBrush}" />
+  </Style>
+  <Style Selector="Button.secondary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+
+  <!-- Flat text button used for status bar items -->
+  <Style Selector="Button.flat">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextDimBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.flat:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+  <Style Selector="Button.flat:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <!-- Filter input -->
+  <Style Selector="TextBox.filter">
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Background" Value="{StaticResource Plumb.PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+    <Setter Property="CaretBrush" Value="{StaticResource Plumb.AccentBrush}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBox.filter /template/ TextBlock#PART_PlaceholderText">
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBox.filter:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{StaticResource Plumb.PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.TextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBox.filter:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{StaticResource Plumb.PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox.filter:pointerover, TextBox.filter:focus">
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+
+  <!-- Thin, square scrollbars -->
+  <Style Selector="ScrollBar /template/ Thumb">
+    <Setter Property="Background" Value="{StaticResource Plumb.BorderBrush}" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Thumb:pointerover">
+    <Setter Property="Background" Value="{StaticResource Plumb.TextMutedBrush}" />
+  </Style>
+
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{StaticResource Plumb.PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.RuleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+
+  <Style Selector="FlyoutPresenter">
+    <Setter Property="Background" Value="{StaticResource Plumb.PanelBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.RuleBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="MaxWidth" Value="420" />
+  </Style>
+
+  <!-- Progress: square bars, accent on rule -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Background" Value="{StaticResource Plumb.RuleBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.AccentBrush}" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ProgressBar /template/ Border">
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+
+  <Style Selector="controls|LucideIcon">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Viewbox Width="{TemplateBinding Size}" Height="{TemplateBinding Size}" Stretch="Uniform">
+          <Canvas Width="24" Height="24">
+            <Path Data="{TemplateBinding Data}"
+                  Stroke="{TemplateBinding Foreground}"
+                  StrokeThickness="{TemplateBinding StrokeThickness}"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round" />
+          </Canvas>
+        </Viewbox>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

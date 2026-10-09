@@ -1,0 +1,12 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Lucide icons (ISC), 24x24 stroke geometry, drawn by LucideIcon with round caps. -->
+  <StreamGeometry x:Key="Icon.ListTree">M8 5h13 M13 12h8 M13 19h8 M3 10a2 2 0 0 0 2 2h3 M3 5v12a2 2 0 0 0 2 2h3</StreamGeometry>
+  <StreamGeometry x:Key="Icon.ChevronDown">m6 9 6 6 6-6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.ChevronRight">m9 18 6-6-6-6</StreamGeometry>
+  <StreamGeometry x:Key="Icon.TriangleAlert">m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3 M12 9v4 M12 17h.01</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Check">M20 6 9 17l-5-5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Copy">M10 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2</StreamGeometry>
+  <StreamGeometry x:Key="Icon.Box">M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z M3.3 7 12 12 20.7 7 M12 22V12</StreamGeometry>
+  <StreamGeometry x:Key="Icon.FolderOpen">m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2</StreamGeometry>
+</ResourceDictionary>
