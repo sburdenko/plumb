@@ -68,6 +68,7 @@ namespace Plumb.Viewer.Editor
             var settings = new SerializedObject(graphics);
             var included = settings.FindProperty("m_AlwaysIncludedShaders");
 
+            var changed = false;
             foreach (var name in GltfShaders)
             {
                 var shader = Shader.Find(name) ?? throw new BuildFailedException($"Shader {name} not found; is glTFast installed?");
@@ -75,11 +76,16 @@ namespace Plumb.Viewer.Editor
                 {
                     included.InsertArrayElementAtIndex(included.arraySize);
                     included.GetArrayElementAtIndex(included.arraySize - 1).objectReferenceValue = shader;
+                    changed = true;
                 }
             }
 
-            settings.ApplyModifiedPropertiesWithoutUndo();
-            AssetDatabase.SaveAssets();
+            // Saving only on a change keeps the committed GraphicsSettings.asset untouched by routine builds.
+            if (changed)
+            {
+                settings.ApplyModifiedPropertiesWithoutUndo();
+                AssetDatabase.SaveAssets();
+            }
         }
 
         private static bool Contains(SerializedProperty list, UnityEngine.Object item)
