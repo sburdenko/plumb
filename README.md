@@ -150,4 +150,4 @@ The Duplex model is not stored in the repository because its source publishes no
 
 ## License
 
-MIT. xBIM is licensed separately under CDDL 1.0.
+MIT. Third-party components keep their own licenses; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

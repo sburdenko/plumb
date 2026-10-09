@@ -1,0 +1,13 @@
+<Project>
+  <!-- Copies the IfcConvert build for the current OS to tools/ifcconvert/ in the output folder. -->
+  <PropertyGroup>
+    <IfcConvertPlatform Condition="$([MSBuild]::IsOSPlatform('OSX'))">macos-arm64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="$([MSBuild]::IsOSPlatform('Windows'))">win-x64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x64</IfcConvertPlatform>
+    <IfcConvertSource>$(MSBuildThisFileDirectory)ifcconvert/$(IfcConvertPlatform)/</IfcConvertSource>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(IfcConvertSource)')">
+    <None Include="$(IfcConvertSource)**" Exclude="$(IfcConvertSource).version"
+          LinkBase="tools/ifcconvert" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>
