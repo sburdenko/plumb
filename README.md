@@ -89,6 +89,8 @@ tests/Plumb.Tests   NUnit tests
 
 .NET 10, Avalonia 12, CommunityToolkit.Mvvm, xBIM Essentials 6, NUnit.
 
+Next on the roadmap: IfcConvert for geometry, SQLite for packages, and a Unity 6 viewer with glTFast.
+
 ## License
 
 MIT. xBIM is licensed separately under CDDL 1.0.
