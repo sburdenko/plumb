@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\src\Plumb.Import\Plumb.Import.csproj" />
     <ProjectReference Include="..\..\src\Plumb.App\Plumb.App.csproj" />
     <ProjectReference Include="..\..\src\Plumb.Package\Plumb.Package.csproj" />
+    <ProjectReference Include="..\..\src\Plumb.Geometry\Plumb.Geometry.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" />
