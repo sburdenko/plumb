@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using Plumb.App.Logging;
 using Plumb.App.Platform;
+using Plumb.App.Recent;
 using Plumb.App.Services;
 using Plumb.App.ViewModels;
 using Plumb.App.Views;
@@ -41,6 +42,8 @@ public sealed partial class App : Application
                 new StorageFilePickerService(window),
                 new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
                 new ViewerLauncher(loggerFactory.CreateLogger<ViewerLauncher>()),
+                new RecentModelFileStore(RecentModelFileStore.DefaultPath, loggerFactory.CreateLogger<RecentModelFileStore>()),
+                TimeProvider.System,
                 loggerFactory.CreateLogger<MainWindowViewModel>());
             window.DataContext = viewModel;
 
