@@ -4,9 +4,12 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Plumb.Core\Plumb.Core.csproj" />
-    <ProjectReference Include="..\Plumb.Ifc\Plumb.Ifc.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Xbim.Essentials" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Plumb.Tests" />
   </ItemGroup>
 </Project>

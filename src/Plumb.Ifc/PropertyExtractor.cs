@@ -2,7 +2,7 @@ using Plumb.Core.Model;
 using Xbim.Ifc4.Interfaces;
 using Xbim.Ifc4.Kernel;
 
-namespace Plumb.Import.Xbim;
+namespace Plumb.Ifc;
 
 /// <summary>
 /// Flattens instance and type property sets and element quantities into <see cref="PropertyRecord"/>s.

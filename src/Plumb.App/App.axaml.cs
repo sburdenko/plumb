@@ -8,7 +8,7 @@ using Plumb.App.Services;
 using Plumb.App.ViewModels;
 using Plumb.App.Views;
 using Plumb.Import;
-using Plumb.Import.Xbim;
+using Plumb.Ifc;
 
 namespace Plumb.App;
 

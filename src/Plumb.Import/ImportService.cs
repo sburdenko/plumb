@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Plumb.Core.Import;
-using Plumb.Import.Xbim;
+using Plumb.Ifc;
 
 namespace Plumb.Import;
 
@@ -24,12 +24,12 @@ public sealed class ImportService : IImportService
         ImportResult Import()
         {
             progress.Report(new ImportProgress(ImportStep.Validating, 0));
-            if (SourceFileValidator.Validate(ifcPath) is { } invalid)
+            if (IfcFileValidator.Validate(ifcPath) is { } invalid)
             {
                 return invalid;
             }
 
-            var model = XbimModelReader.Read(ifcPath, progress, cancellationToken);
+            var model = IfcModelReader.Read(ifcPath, new StepProgress(progress, ImportStep.ReadingModel), cancellationToken);
             return new ImportResult.Success(model, stopwatch.Elapsed);
         }
 

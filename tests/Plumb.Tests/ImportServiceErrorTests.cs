@@ -77,14 +77,14 @@ public sealed class ImportServiceErrorTests
         AssertFailure(result, ImportError.Cancelled);
     }
 
-    [TestCase(ImportStep.ReadingModel)]
-    [TestCase(ImportStep.CollectingData)]
-    public async Task CancelDuringStepReturnsCancelled(ImportStep step)
+    [TestCase(10)]
+    [TestCase(90)]
+    public async Task CancelWhileReadingReturnsCancelled(int atPercent)
     {
         using var cts = new CancellationTokenSource();
         var progress = new SyncProgress<ImportProgress>(p =>
         {
-            if (p.Step == step)
+            if (p.Step == ImportStep.ReadingModel && p.Percent >= atPercent)
             {
                 cts.Cancel();
             }

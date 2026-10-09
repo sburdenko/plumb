@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Xbim.Common.Configuration;
 
-namespace Plumb.Import.Xbim;
+namespace Plumb.Ifc;
 
 public static class XbimSetup
 {

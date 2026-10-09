@@ -1,9 +1,9 @@
 using System.Text;
 using Plumb.Core.Import;
 
-namespace Plumb.Import;
+namespace Plumb.Ifc;
 
-internal static class SourceFileValidator
+public static class IfcFileValidator
 {
     private const string IfcExtension = ".ifc";
     private const string StepMagic = "ISO-10303-21";
