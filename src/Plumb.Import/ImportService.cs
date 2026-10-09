@@ -129,7 +129,7 @@ public sealed class ImportService : IImportService
     {
         if (geometry is GeometryState.NotBuilt notBuilt)
         {
-            _logger.LogWarning("Geometry not built for {Path} ({Error}): {Reason}", ifcPath, notBuilt.Error, notBuilt.Reason);
+            _logger.LogWarning("Geometry not built for {Path} ({Error}): {Detail}", ifcPath, notBuilt.Error, notBuilt.Detail);
         }
     }
 
@@ -158,7 +158,7 @@ public sealed class ImportService : IImportService
             source.Model.Elements.Count,
             (long)source.Stopwatch.Elapsed.TotalMilliseconds,
             notBuilt?.Error,
-            notBuilt?.Reason);
+            notBuilt?.Detail);
     }
 
     /// <summary>

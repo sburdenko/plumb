@@ -58,7 +58,7 @@ public sealed class IfcConvertRunnerTests
 
         var notBuilt = (GeometryState.NotBuilt)state;
         Assert.That(notBuilt.Error, Is.EqualTo(GeometryError.ConverterFailed));
-        Assert.That(notBuilt.Reason, Does.Contain("Unable to parse"));
+        Assert.That(notBuilt.Detail, Does.StartWith("exit code 1: ").And.Contain("Unable to parse"));
         Assert.That(File.Exists(_glb), Is.False);
     }
 
@@ -133,7 +133,7 @@ public sealed class IfcConvertRunnerTests
 
         var notBuilt = (GeometryState.NotBuilt)state;
         Assert.That(notBuilt.Error, Is.EqualTo(GeometryError.ConverterFailed));
-        Assert.That(notBuilt.Reason, Does.EndWith("Cannot read [section] of a.ifc"));
+        Assert.That(notBuilt.Detail, Is.EqualTo("exit code 1: Cannot read [section] of a.ifc"));
     }
 
     private static IfcConvertRunner Runner(TimeSpan timeout) =>

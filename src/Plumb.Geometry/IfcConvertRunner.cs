@@ -11,7 +11,6 @@ namespace Plumb.Geometry;
 /// </summary>
 public sealed partial class IfcConvertRunner(string executablePath, TimeSpan timeout, ILogger<IfcConvertRunner> logger) : IGeometryConverter
 {
-    private const string NotBuiltPrefix = "3D geometry was not built: ";
     private static readonly TimeSpan KillGracePeriod = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan OutputGracePeriod = TimeSpan.FromSeconds(5);
 
@@ -26,7 +25,7 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
     {
         if (!File.Exists(executablePath))
         {
-            return NotBuilt(GeometryError.ConverterMissing, "IfcConvert is not installed next to Plumb.");
+            return new GeometryState.NotBuilt(GeometryError.ConverterMissing, $"not found at {executablePath}");
         }
 
         using var process = new Process { StartInfo = StartInfo(ifcPath, glbPath) };
@@ -37,7 +36,7 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
         catch (Win32Exception ex)
         {
             logger.LogError(ex, "Cannot start {Converter}", executablePath);
-            return NotBuilt(GeometryError.ConverterFailed, $"IfcConvert could not be started: {ex.Message}");
+            return new GeometryState.NotBuilt(GeometryError.ConverterFailed, $"could not start: {ex.Message}");
         }
 
         ProcessStarted?.Invoke(process.Id);
@@ -58,14 +57,14 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
         if (outcome == Outcome.TimedOut)
         {
             DeletePartialFile(glbPath);
-            return NotBuilt(GeometryError.Timeout, $"IfcConvert did not finish within {timeout.TotalMinutes:0.#} minutes.");
+            return new GeometryState.NotBuilt(GeometryError.Timeout, $"stopped after {timeout.TotalSeconds:0.#} s");
         }
 
         if (process.ExitCode != 0 || !File.Exists(glbPath))
         {
             logger.LogWarning("IfcConvert failed with exit code {ExitCode}: {Log}", process.ExitCode, log);
             DeletePartialFile(glbPath);
-            return NotBuilt(GeometryError.ConverterFailed, $"IfcConvert failed (exit code {process.ExitCode}). {LastError(log)}".TrimEnd());
+            return new GeometryState.NotBuilt(GeometryError.ConverterFailed, $"exit code {process.ExitCode}: {LastError(log)}".TrimEnd(' ', ':'));
         }
 
         return new GeometryState.Built();
@@ -166,8 +165,6 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
     // "[error] [SYN001] [2026-10-09 13:24:31] message": strips the leading tags, keeps brackets in the message.
     [GeneratedRegex(@"^\[error\](\s*\[[^\]]*\])*\s*(?<message>.*)$", RegexOptions.IgnoreCase)]
     private static partial Regex ErrorLine();
-
-    private static GeometryState.NotBuilt NotBuilt(GeometryError error, string reason) => new(error, NotBuiltPrefix + reason);
 
     private enum Outcome
     {

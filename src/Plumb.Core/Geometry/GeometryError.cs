@@ -13,5 +13,8 @@ namespace Plumb.Core.Geometry
 
         /// <summary>The package has no geometry file, for example one saved before geometry existed.</summary>
         FileMissing,
+
+        /// <summary>A reason recorded by a newer version of Plumb that this version does not know.</summary>
+        Unknown,
     }
 }

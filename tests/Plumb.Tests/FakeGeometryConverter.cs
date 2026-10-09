@@ -22,8 +22,8 @@ internal sealed class FakeGeometryConverter : IGeometryConverter
             return Task.FromResult<GeometryState>(new GeometryState.Built());
         });
 
-    public static FakeGeometryConverter Fails(GeometryError error, string reason) =>
-        new((_, _) => Task.FromResult<GeometryState>(new GeometryState.NotBuilt(error, reason)));
+    public static FakeGeometryConverter Fails(GeometryError error, string detail) =>
+        new((_, _) => Task.FromResult<GeometryState>(new GeometryState.NotBuilt(error, detail)));
 
     public Task<GeometryState> ConvertAsync(string ifcPath, string glbPath, CancellationToken cancellationToken) =>
         _convert(glbPath, cancellationToken);

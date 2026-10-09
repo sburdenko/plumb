@@ -1,3 +1,4 @@
+using Plumb.Core.Geometry;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
 using Plumb.Package;
@@ -89,6 +90,20 @@ public sealed class PackageReaderErrorTests
         File.WriteAllText(path, manifest.ToJsonString());
 
         Assert.That(() => PackageReader.Read(_package, CancellationToken.None), Throws.InstanceOf<PackageFormatException>());
+    }
+
+    [Test]
+    public void GeometryErrorFromANewerVersionStillOpensThePackage()
+    {
+        var path = Path.Combine(_package, PackageLayout.ManifestFile);
+        var manifest = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        manifest["geometryError"] = "GpuOutOfMemory";
+        manifest["geometryDetail"] = "needs 12 GB";
+        File.WriteAllText(path, manifest.ToJsonString());
+
+        var contents = PackageReader.Read(_package, CancellationToken.None);
+
+        Assert.That(contents.Geometry, Is.EqualTo(new GeometryState.NotBuilt(GeometryError.Unknown, "needs 12 GB")));
     }
 
     [Test]

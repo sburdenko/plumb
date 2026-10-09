@@ -11,7 +11,10 @@ namespace Plumb.Core.Geometry
 
         public sealed record Built : GeometryState;
 
-        /// <param name="Reason">A message for the user.</param>
-        public sealed record NotBuilt(GeometryError Error, string Reason) : GeometryState;
+        /// <param name="Detail">
+        /// Technical detail such as IfcConvert's last error line; may be empty. Not a sentence for the user:
+        /// the app words the message from <paramref name="Error"/>.
+        /// </param>
+        public sealed record NotBuilt(GeometryError Error, string Detail) : GeometryState;
     }
 }

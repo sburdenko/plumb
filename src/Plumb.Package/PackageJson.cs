@@ -20,7 +20,7 @@ internal static class PackageJson
         RespectRequiredConstructorParameters = true,
         RespectNullableAnnotations = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new GeometryErrorConverter() },
     };
 
     // Every entry keeps all four keys, with null where there is no name or storey.
