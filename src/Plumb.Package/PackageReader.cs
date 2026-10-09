@@ -28,12 +28,12 @@ public static class PackageReader
     {
         if (manifest.GeometryError is { } error)
         {
-            return new GeometryState.NotBuilt(error, manifest.GeometryMessage ?? string.Empty);
+            return new GeometryState.NotBuilt(error, manifest.GeometryDetail ?? string.Empty);
         }
 
         return File.Exists(Path.Combine(directory, PackageLayout.GeometryFile))
             ? new GeometryState.Built()
-            : new GeometryState.NotBuilt(GeometryError.FileMissing, "3D geometry was not built: the package has no model.glb.");
+            : new GeometryState.NotBuilt(GeometryError.FileMissing, string.Empty);
     }
 
     private static PackageManifest ReadManifest(string path)

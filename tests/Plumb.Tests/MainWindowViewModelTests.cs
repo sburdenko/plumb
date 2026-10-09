@@ -196,14 +196,13 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task MissingGeometryShowsAWarningButKeepsReveal()
     {
-        const string reason = "3D geometry was not built: IfcConvert is not installed next to Plumb.";
-        var geometry = new GeometryState.NotBuilt(GeometryError.ConverterMissing, reason);
+        var geometry = new GeometryState.NotBuilt(GeometryError.ConverterMissing, "not found at /app/tools/ifcconvert/IfcConvert");
         _importService.Next = Loaded with { Package = new PackageState.Saved("/models/a.plumb", geometry) };
 
         await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
 
         var loaded = (LoadedViewModel)_viewModel.CurrentState;
-        Assert.That(loaded.Warning, Is.EqualTo(reason));
+        Assert.That(loaded.Warning, Is.EqualTo("3D geometry was not built: IfcConvert is not installed next to Plumb."));
         Assert.That(loaded.CanReveal, Is.True);
     }
 

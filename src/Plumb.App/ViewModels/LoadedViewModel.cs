@@ -51,7 +51,7 @@ public sealed partial class LoadedViewModel : ViewModelBase
     public string? Warning => _package switch
     {
         PackageState.NotSaved notSaved => notSaved.Reason,
-        PackageState.Saved { Geometry: GeometryState.NotBuilt notBuilt } => notBuilt.Reason,
+        PackageState.Saved { Geometry: GeometryState.NotBuilt notBuilt } => GeometryWarning.For(notBuilt),
         _ => null,
     };
 

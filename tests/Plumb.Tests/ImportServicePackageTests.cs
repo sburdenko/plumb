@@ -207,13 +207,13 @@ public sealed class ImportServicePackageTests
     [Test]
     public async Task FailedGeometryStillSavesThePackageAndRemembersWhy()
     {
-        const string reason = "3D geometry was not built: IfcConvert failed (exit code 1).";
-        var service = new ImportService(NullLogger<ImportService>.Instance, FakeGeometryConverter.Fails(GeometryError.ConverterFailed, reason));
+        const string detail = "exit code 1: Unable to parse input file";
+        var service = new ImportService(NullLogger<ImportService>.Instance, FakeGeometryConverter.Fails(GeometryError.ConverterFailed, detail));
 
         var imported = (ImportResult.Success)await service.RunAsync(_ifc, _temp.Path, _noProgress, CancellationToken.None);
         var opened = (ImportResult.Success)await service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);
 
-        var expected = new PackageState.Saved(_package, new GeometryState.NotBuilt(GeometryError.ConverterFailed, reason));
+        var expected = new PackageState.Saved(_package, new GeometryState.NotBuilt(GeometryError.ConverterFailed, detail));
         Assert.That(imported.Package, Is.EqualTo(expected));
         Assert.That(opened.Package, Is.EqualTo(expected));
         Assert.That(File.Exists(Path.Combine(_package, PackageLayout.GeometryFile)), Is.False);
