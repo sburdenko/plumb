@@ -1,0 +1,6 @@
+{
+  "name": "Plumb.Viewer.Editor",
+  "rootNamespace": "Plumb.Viewer.Editor",
+  "references": ["Plumb.Viewer"],
+  "includePlatforms": ["Editor"]
+}
