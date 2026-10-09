@@ -36,7 +36,7 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.
 - Filters the tree by element name or IFC type.
-- Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely.
+- Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely. When that folder is read-only, the model still opens and the app shows why it was not saved.
 - Imports in the background with progress and cancellation. A cancelled or failed import never leaves a half-written package behind.
 
 | Duplex sample: 2.4 MB, 246 elements, 12,713 property values | Time |

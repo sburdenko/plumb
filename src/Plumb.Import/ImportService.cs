@@ -48,18 +48,10 @@ public sealed class ImportService : IImportService
             // Hashed before parsing so the manifest describes the bytes the model was read from.
             var sourceSha256 = SourceHash.Sha256(ifcPath, cancellationToken);
             var model = IfcModelReader.Read(ifcPath, new StepProgress(progress, ImportStep.ReadingModel, 0, ReadEnd), cancellationToken);
-            var importDuration = stopwatch.Elapsed;
+            var manifest = CreateManifest(model, sourceSha256, stopwatch.Elapsed);
 
-            progress.Report(new ImportProgress(ImportStep.WritingPackage, ReadEnd));
-            var manifest = CreateManifest(model, sourceSha256, importDuration);
-            PackageWriter.Write(draft.Location, model, manifest, new StepProgress(progress, ImportStep.WritingPackage, ReadEnd, WriteEnd), cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            progress.Report(new ImportProgress(ImportStep.Finalizing, WriteEnd));
-            draft.Publish();
-            progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
-
-            return new ImportResult.Success(model, TimeSpan.FromMilliseconds(manifest.ImportDurationMs), packagePath);
+            var package = Save(model, manifest, draft, packagePath, progress, cancellationToken);
+            return new ImportResult.Success(model, TimeSpan.FromMilliseconds(manifest.ImportDurationMs), package);
         }
 
         var result = await RunInBackgroundAsync(Import, ifcPath, ImportError.ParseFailed, cancellationToken).ConfigureAwait(false);
@@ -80,12 +72,57 @@ public sealed class ImportService : IImportService
             progress.Report(new ImportProgress(ImportStep.OpeningPackage, 100));
 
             var importDuration = TimeSpan.FromMilliseconds(contents.Manifest.ImportDurationMs);
-            return new ImportResult.Success(contents.Model, importDuration, packagePath);
+            return new ImportResult.Success(contents.Model, importDuration, new PackageState.Saved(packagePath));
         }
 
         var result = await RunInBackgroundAsync(Open, packagePath, ImportError.PackageInvalid, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Package opened: {Result}", Describe(result));
         return result;
+    }
+
+    /// <summary>
+    /// Writes and publishes the package. A failure here only means the model is not saved;
+    /// the model itself was read successfully and is still returned. Cancellation still cancels.
+    /// </summary>
+    private PackageState Save(
+        IfcModelData model,
+        PackageManifest manifest,
+        PackageDraft draft,
+        string packagePath,
+        IProgress<ImportProgress> progress,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            progress.Report(new ImportProgress(ImportStep.WritingPackage, ReadEnd));
+            var writeProgress = new StepProgress(progress, ImportStep.WritingPackage, ReadEnd, WriteEnd);
+            PackageWriter.Write(draft.Location, model, manifest, writeProgress, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            progress.Report(new ImportProgress(ImportStep.Finalizing, WriteEnd));
+            draft.Publish();
+            progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
+            return new PackageState.Saved(packagePath);
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "Model loaded but not saved to {Package}", packagePath);
+            progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
+            return new PackageState.NotSaved(DescribeSaveFailure(packagePath, ex));
+        }
+    }
+
+    /// <summary>
+    /// A short reason for the user; the exception, with the internal draft path, goes to the log.
+    /// </summary>
+    private static string DescribeSaveFailure(string packagePath, Exception error)
+    {
+        var name = Path.GetFileName(packagePath);
+        var folder = Path.GetFileName(Path.GetDirectoryName(packagePath));
+        var reason = error is UnauthorizedAccessException
+            ? $"the folder {folder} is read-only."
+            : "the folder next to the source file could not be written to.";
+        return $"{name} was not saved: {reason}";
     }
 
     private static PackageManifest CreateManifest(IfcModelData model, string sourceSha256, TimeSpan importDuration) =>

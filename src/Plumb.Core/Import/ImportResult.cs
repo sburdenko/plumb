@@ -13,8 +13,8 @@ namespace Plumb.Core.Import
         }
 
         /// <param name="ImportDuration">How long reading the IFC file took; for an opened package, the value stored in it.</param>
-        /// <param name="PackagePath">The <c>.plumb</c> folder that holds this model.</param>
-        public sealed record Success(IfcModelData Model, TimeSpan ImportDuration, string PackagePath) : ImportResult;
+        /// <param name="Package">Where the model was saved, or why it could not be.</param>
+        public sealed record Success(IfcModelData Model, TimeSpan ImportDuration, PackageState Package) : ImportResult;
 
         public sealed record Failure(ImportError Error, string Message) : ImportResult;
     }

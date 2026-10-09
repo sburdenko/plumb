@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
@@ -37,7 +38,7 @@ public sealed class ImportServicePackageTests
     {
         var result = await ImportAsync();
 
-        Assert.That(result.PackagePath, Is.EqualTo(_package));
+        Assert.That(result.Package, Is.EqualTo(new PackageState.Saved(_package)));
         Assert.That(Directory.GetFiles(_package).Select(Path.GetFileName),
             Is.EquivalentTo(new[] { PackageLayout.ManifestFile, PackageLayout.DatabaseFile, PackageLayout.ElementIndexFile }));
     }
@@ -92,7 +93,7 @@ public sealed class ImportServicePackageTests
         Assert.That(success.Model.Elements, Is.EqualTo(imported.Model.Elements));
         Assert.That(success.Model.Properties, Is.EqualTo(imported.Model.Properties));
         Assert.That(success.ImportDuration, Is.EqualTo(imported.ImportDuration));
-        Assert.That(success.PackagePath, Is.EqualTo(_package));
+        Assert.That(success.Package, Is.EqualTo(new PackageState.Saved(_package)));
     }
 
     [Test]
@@ -159,6 +160,45 @@ public sealed class ImportServicePackageTests
         }));
         Assert.That(reports.Select(r => r.Percent), Is.Ordered);
         Assert.That(reports[^1].Percent, Is.EqualTo(100));
+    }
+
+    [Test]
+    public async Task UnwritableOutputStillLoadsTheModel()
+    {
+        var result = await _service.RunAsync(_ifc, outputDirectory: _ifc, _noProgress, CancellationToken.None);
+
+        var success = (ImportResult.Success)result;
+        Assert.That(success.Model.Elements, Is.Not.Empty);
+        var notSaved = (PackageState.NotSaved)success.Package;
+        Assert.That(notSaved.Reason, Does.StartWith("Duplex.plumb was not saved"));
+        Assert.That(notSaved.Reason, Does.Not.Contain(".draft"));
+        Assert.That(LeftoverDrafts(), Is.Empty);
+    }
+
+    [Test]
+    [Platform(Exclude = "Win", Reason = "Unix file modes; Windows folder permissions work differently")]
+    [UnsupportedOSPlatform("windows")]
+    public async Task ReadOnlySourceFolderStillLoadsTheModel()
+    {
+        var folder = Path.Combine(_temp.Path, "readonly");
+        Directory.CreateDirectory(folder);
+        var ifc = Path.Combine(folder, "Duplex.ifc");
+        File.Copy(_ifc, ifc);
+        File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            var result = await _service.RunAsync(ifc, folder, _noProgress, CancellationToken.None);
+
+            var success = (ImportResult.Success)result;
+            Assert.That(success.Model.Elements, Is.Not.Empty);
+            var notSaved = (PackageState.NotSaved)success.Package;
+            Assert.That(notSaved.Reason, Is.EqualTo("Duplex.plumb was not saved: the folder readonly is read-only."));
+            Assert.That(Directory.GetDirectories(folder), Is.Empty);
+        }
+        finally
+        {
+            File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     [Test]

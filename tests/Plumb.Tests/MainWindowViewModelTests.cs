@@ -15,7 +15,7 @@ public sealed class MainWindowViewModelTests
     private static readonly ImportResult.Success Loaded = new(
         new IfcModelData("a.ifc", "IFC4", [new ElementRecord("P", "IfcProject", "Project", null, null)], []),
         TimeSpan.FromSeconds(1),
-        "/models/a.plumb");
+        new PackageState.Saved("/models/a.plumb"));
 
     private FakeImportService _importService = null!;
     private FakeFilePicker _picker = null!;
@@ -177,6 +177,31 @@ public sealed class MainWindowViewModelTests
 
         Assert.That(loaded.RevealLabel, Is.EqualTo("Show in Test"));
         Assert.That(_revealer.Revealed, Is.EqualTo(new[] { "/models/a.plumb" }));
+    }
+
+    [Test]
+    public async Task UnsavedPackageShowsAWarningAndHidesReveal()
+    {
+        _importService.Next = Loaded with { Package = new PackageState.NotSaved("Could not save a.plumb: read-only") };
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        Assert.That(loaded.SaveWarning, Is.EqualTo("Could not save a.plumb: read-only"));
+        Assert.That(loaded.CanReveal, Is.False);
+        Assert.That(loaded.RevealCommand.CanExecute(null), Is.False);
+    }
+
+    [Test]
+    public async Task SavedPackageHasNoWarning()
+    {
+        _importService.Next = Loaded;
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        Assert.That(loaded.SaveWarning, Is.Null);
+        Assert.That(loaded.CanReveal, Is.True);
     }
 
     [Test]
