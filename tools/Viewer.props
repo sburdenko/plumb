@@ -15,10 +15,15 @@
     </ItemGroup>
   </Target>
 
+  <!-- A bundle whose files change but whose own date does not keeps its old icon in the macOS Dock. -->
   <Target Name="CopyViewerBuild" AfterTargets="Build" DependsOnTargets="CollectViewerBuild" Condition="Exists('$(ViewerBuildSource)')">
     <Copy SourceFiles="@(ViewerBuildFile)"
           DestinationFiles="@(ViewerBuildFile->'$(OutDir)viewer-build/%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true" />
+          SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="CopiedViewerFile" />
+    </Copy>
+    <Exec Command="touch &quot;$(OutDir)viewer-build/&quot;*.app"
+          Condition="$([MSBuild]::IsOSPlatform('OSX')) and '@(CopiedViewerFile)' != ''" />
   </Target>
 
   <Target Name="PublishViewerBuild" AfterTargets="Publish" DependsOnTargets="CollectViewerBuild" Condition="Exists('$(ViewerBuildSource)')">
