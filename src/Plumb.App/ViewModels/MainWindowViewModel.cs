@@ -62,7 +62,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         var previous = CurrentState;
         using var cancellation = new CancellationTokenSource();
-        var importing = new ImportingViewModel(Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar)), cancellation);
+        var importing = new ImportingViewModel(Path.GetFileName(Path.TrimEndingDirectorySeparator(path)), cancellation);
         CurrentState = importing;
 
         try

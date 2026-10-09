@@ -91,10 +91,10 @@ xBIM and SQLite each appear in exactly one project, so either can be replaced wi
 ```
 Duplex.ifc
    |
-   |-- 1  validate   extension and ISO-10303-21 header           Plumb.Ifc
-   |-- 2  read       spatial structure, properties, units         Plumb.Ifc
-   |-- 3  write      hidden draft folder next to the target       Plumb.Package
-   '-- 4  publish    rename the draft to Duplex.plumb             Plumb.Import
+   |-- 1  validate   extension and ISO-10303-21 header        Plumb.Ifc
+   |-- 2  read       spatial structure, properties, units     Plumb.Ifc
+   |-- 3  write      dot-prefixed draft next to the target    Plumb.Package
+   '-- 4  publish    rename the draft to Duplex.plumb         Plumb.Import
                      (an existing package is replaced only here)
 ```
 

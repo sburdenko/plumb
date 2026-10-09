@@ -31,6 +31,19 @@ public sealed class ImportServiceErrorTests
     }
 
     [Test]
+    public async Task PlainFolderReturnsNotIfcWithAClearMessage()
+    {
+        using var temp = new TempDirectory();
+        var folder = Path.Combine(temp.Path, "Drawings");
+        Directory.CreateDirectory(folder);
+
+        var result = await _service.RunAsync(folder, Output, _noProgress, CancellationToken.None);
+
+        AssertFailure(result, ImportError.NotIfc);
+        Assert.That(((ImportResult.Failure)result).Message, Does.Contain("folder"));
+    }
+
+    [Test]
     public async Task WrongExtensionReturnsNotIfc()
     {
         using var temp = new TempDirectory();

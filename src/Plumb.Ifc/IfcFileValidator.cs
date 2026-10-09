@@ -12,6 +12,13 @@ public static class IfcFileValidator
     /// <returns>A failure, or null when the file looks like a readable IFC STEP file.</returns>
     public static ImportResult.Failure? Validate(string ifcPath)
     {
+        if (Directory.Exists(ifcPath))
+        {
+            return new ImportResult.Failure(
+                ImportError.NotIfc,
+                $"{Path.GetFileName(Path.TrimEndingDirectorySeparator(ifcPath))} is a folder, not an IFC file or a .plumb package.");
+        }
+
         if (string.IsNullOrWhiteSpace(ifcPath) || !File.Exists(ifcPath))
         {
             return new ImportResult.Failure(ImportError.FileNotFound, $"File not found: {ifcPath}");

@@ -45,11 +45,13 @@ public sealed class ImportService : IImportService
                 return invalid;
             }
 
+            // Hashed before parsing so the manifest describes the bytes the model was read from.
+            var sourceSha256 = SourceHash.Sha256(ifcPath, cancellationToken);
             var model = IfcModelReader.Read(ifcPath, new StepProgress(progress, ImportStep.ReadingModel, 0, ReadEnd), cancellationToken);
             var importDuration = stopwatch.Elapsed;
 
             progress.Report(new ImportProgress(ImportStep.WritingPackage, ReadEnd));
-            var manifest = CreateManifest(ifcPath, model, importDuration, cancellationToken);
+            var manifest = CreateManifest(model, sourceSha256, importDuration);
             PackageWriter.Write(draft.Location, model, manifest, new StepProgress(progress, ImportStep.WritingPackage, ReadEnd, WriteEnd), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -86,15 +88,11 @@ public sealed class ImportService : IImportService
         return result;
     }
 
-    private static PackageManifest CreateManifest(
-        string ifcPath,
-        IfcModelData model,
-        TimeSpan importDuration,
-        CancellationToken cancellationToken) =>
+    private static PackageManifest CreateManifest(IfcModelData model, string sourceSha256, TimeSpan importDuration) =>
         new(
             PackageLayout.FormatVersion,
             model.SourceFile,
-            SourceHash.Sha256(ifcPath, cancellationToken),
+            sourceSha256,
             model.IfcSchema,
             DateTime.UtcNow,
             model.Elements.Count,
