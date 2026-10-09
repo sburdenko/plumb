@@ -35,11 +35,6 @@ The viewer is built with Unity 6 under the Unity Software Terms.
 - License: ISC, https://lucide.dev/license
 - Source: https://github.com/lucide-icons/lucide
 
-## Unity mark on the viewer icon
-
-- Outline from Simple Icons (CC0 1.0), `tools/icons/unity-mark.path`
-- Unity and the Unity logo are trademarks of Unity Technologies. The mark only indicates that the viewer is built with Unity.
-
 ## Avalonia, CommunityToolkit.Mvvm, Microsoft.Data.Sqlite, Microsoft.Extensions.Logging
 
 - License: MIT
