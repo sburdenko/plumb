@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Plumb.Core.Geometry;
 
@@ -8,10 +9,11 @@ namespace Plumb.Geometry;
 /// <summary>
 /// Converts IFC geometry to binary glTF by running IfcOpenShell's IfcConvert as a separate process.
 /// </summary>
-public sealed class IfcConvertRunner(string executablePath, TimeSpan timeout, ILogger<IfcConvertRunner> logger) : IGeometryConverter
+public sealed partial class IfcConvertRunner(string executablePath, TimeSpan timeout, ILogger<IfcConvertRunner> logger) : IGeometryConverter
 {
     private const string NotBuiltPrefix = "3D geometry was not built: ";
     private static readonly TimeSpan KillGracePeriod = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan OutputGracePeriod = TimeSpan.FromSeconds(5);
 
     /// <summary>The copy bundled with the app in <c>tools/ifcconvert/</c>.</summary>
     public static string DefaultExecutablePath =>
@@ -40,7 +42,7 @@ public sealed class IfcConvertRunner(string executablePath, TimeSpan timeout, IL
         var errors = process.StandardError.ReadToEndAsync(CancellationToken.None);
 
         var outcome = await WaitAsync(process, cancellationToken).ConfigureAwait(false);
-        var log = (await output.ConfigureAwait(false)) + (await errors.ConfigureAwait(false));
+        var log = await CollectOutputAsync(output, errors).ConfigureAwait(false);
 
         if (outcome == Outcome.Cancelled)
         {
@@ -99,6 +101,24 @@ public sealed class IfcConvertRunner(string executablePath, TimeSpan timeout, IL
         }
     }
 
+    /// <summary>
+    /// Waits briefly for the output once the process is gone. A process that escaped the killed tree
+    /// can keep the pipes open forever, so the log is best effort and never blocks the result.
+    /// </summary>
+    private async Task<string> CollectOutputAsync(Task<string> output, Task<string> errors)
+    {
+        try
+        {
+            await Task.WhenAll(output, errors).WaitAsync(OutputGracePeriod).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            logger.LogWarning("IfcConvert output was still open {Seconds} s after it stopped", OutputGracePeriod.TotalSeconds);
+        }
+
+        return string.Join('\n', new[] { output, errors }.Where(t => t.IsCompletedSuccessfully).Select(t => t.Result));
+    }
+
     private async Task StopAsync(Process process)
     {
         try
@@ -128,9 +148,13 @@ public sealed class IfcConvertRunner(string executablePath, TimeSpan timeout, IL
     // IfcConvert logs details first and its summary ("Unable to parse input file") last.
     private static string LastError(string log) =>
         log.Split('\n')
-            .Select(line => line.Trim())
-            .LastOrDefault(line => line.StartsWith("[error]", StringComparison.OrdinalIgnoreCase))
-            ?.Split("] ").Last() ?? string.Empty;
+            .Select(line => ErrorLine().Match(line.Trim()))
+            .LastOrDefault(match => match.Success)
+            ?.Groups["message"].Value ?? string.Empty;
+
+    // "[error] [SYN001] [2026-10-09 13:24:31] message": strips the leading tags, keeps brackets in the message.
+    [GeneratedRegex(@"^\[error\](\s*\[[^\]]*\])*\s*(?<message>.*)$", RegexOptions.IgnoreCase)]
+    private static partial Regex ErrorLine();
 
     private static GeometryState.NotBuilt NotBuilt(GeometryError error, string reason) => new(error, NotBuiltPrefix + reason);
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plumb.Core.Geometry;
 using Plumb.Geometry;
@@ -81,6 +82,43 @@ public sealed class IfcConvertRunnerTests
             Throws.InstanceOf<OperationCanceledException>());
         Assert.That(File.Exists(_glb), Is.False);
         AssertNoConverterRunning();
+    }
+
+    [Test]
+    [Platform(Exclude = "Win", Reason = "Uses a shell script in place of IfcConvert")]
+    [UnsupportedOSPlatform("windows")]
+    public async Task TimeoutReturnsEvenWhenAnOrphanKeepsTheOutputOpen()
+    {
+        var script = ConverterScripts.LeavesOrphanHoldingOutput(_temp.Path);
+        var runner = new IfcConvertRunner(script, TimeSpan.FromMilliseconds(200), NullLogger<IfcConvertRunner>.Instance);
+        try
+        {
+            var state = await runner.ConvertAsync(Samples.Duplex, _glb, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.That(((GeometryState.NotBuilt)state).Error, Is.EqualTo(GeometryError.Timeout));
+        }
+        finally
+        {
+            ConverterScripts.KillOrphans();
+        }
+    }
+
+    [Test]
+    [Platform(Exclude = "Win", Reason = "Uses a shell script in place of IfcConvert")]
+    [UnsupportedOSPlatform("windows")]
+    public async Task ErrorDetailIsTheLastErrorLineWithoutItsTags()
+    {
+        var script = ConverterScripts.FailsWith(
+            _temp.Path,
+            stdout: "[notice] [N1] converting",
+            stderr: "[error] [E2] [2026-10-09 13:24:31] Cannot read [section] of a.ifc");
+        var runner = new IfcConvertRunner(script, GenerousTimeout, NullLogger<IfcConvertRunner>.Instance);
+
+        var state = await runner.ConvertAsync(Samples.Duplex, _glb, CancellationToken.None);
+
+        var notBuilt = (GeometryState.NotBuilt)state;
+        Assert.That(notBuilt.Error, Is.EqualTo(GeometryError.ConverterFailed));
+        Assert.That(notBuilt.Reason, Does.EndWith("Cannot read [section] of a.ifc"));
     }
 
     private static IfcConvertRunner Runner(TimeSpan timeout) =>
