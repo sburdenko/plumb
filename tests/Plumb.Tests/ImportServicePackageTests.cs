@@ -220,6 +220,59 @@ public sealed class ImportServicePackageTests
     }
 
     [Test]
+    public async Task GeometryStartsWhileTheModelIsStillBeingRead()
+    {
+        var readingFinished = false;
+        bool? finishedWhenGeometryStarted = null;
+        var service = new ImportService(
+            NullLogger<ImportService>.Instance,
+            FakeGeometryConverter.BuildsAfter(_ => finishedWhenGeometryStarted = readingFinished));
+        var progress = new SyncProgress<ImportProgress>(p =>
+            readingFinished |= p.Step is ImportStep.ReadingModel && p.Percent == 60 || p.Step > ImportStep.ReadingModel);
+
+        await service.RunAsync(_ifc, _temp.Path, progress, CancellationToken.None);
+
+        Assert.That(finishedWhenGeometryStarted, Is.False);
+    }
+
+    [Test]
+    public async Task GeometryAndManifestDescribeTheSameBytes()
+    {
+        string? converterInput = null;
+        string? hashOfConverterInput = null;
+        var service = new ImportService(
+            NullLogger<ImportService>.Instance,
+            FakeGeometryConverter.BuildsAfter(path =>
+            {
+                converterInput = path;
+                hashOfConverterInput = Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)));
+                File.AppendAllText(_ifc, "/* edited while importing */");
+            }));
+
+        await service.RunAsync(_ifc, _temp.Path, _noProgress, CancellationToken.None);
+
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_package, PackageLayout.ManifestFile))).RootElement;
+        Assert.That(converterInput, Is.Not.EqualTo(_ifc), "IfcConvert should read a snapshot, not the file being edited");
+        Assert.That(manifest.GetProperty("sourceSha256").GetString(), Is.EqualTo(hashOfConverterInput));
+        Assert.That(Directory.GetFiles(_temp.Path).Select(Path.GetFileName), Is.EqualTo(new[] { "Duplex.ifc" }), "the snapshot is removed");
+    }
+
+    [Test]
+    public async Task FailedReadStopsTheGeometryAndLeavesNothingBehind()
+    {
+        var geometryCancelled = new TaskCompletionSource();
+        var broken = Path.Combine(_temp.Path, "Broken.ifc");
+        File.WriteAllText(broken, "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n");
+        var service = new ImportService(NullLogger<ImportService>.Instance, FakeGeometryConverter.WaitsForCancellation(geometryCancelled));
+
+        var result = await service.RunAsync(broken, _temp.Path, _noProgress, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.That(((ImportResult.Failure)result).Error, Is.EqualTo(ImportError.ParseFailed));
+        Assert.That(geometryCancelled.Task.IsCompleted, Is.True, "geometry must be stopped when reading fails");
+        Assert.That(Directory.GetFileSystemEntries(_temp.Path).Select(Path.GetFileName), Is.EquivalentTo(new[] { "Duplex.ifc", "Broken.ifc" }));
+    }
+
+    [Test]
     public async Task OpeningAMissingPackageReturnsFileNotFound()
     {
         var result = await _service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);

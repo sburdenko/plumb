@@ -43,8 +43,8 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 
 | Duplex sample: 2.4 MB, 246 elements, 12,713 property values | Time |
 |---|---|
-| Import from IFC, including geometry | ~1.3 s |
-| of which IfcConvert | ~1.1 s |
+| Import from IFC, including geometry | ~1.2 s |
+| IfcConvert alone, running alongside the IFC read | ~1.15 s |
 | Open the saved package | ~15 ms |
 
 Measured on Apple Silicon with a Release build in a warm process.
@@ -97,14 +97,15 @@ xBIM, IfcConvert and SQLite each appear in exactly one project, so any of them c
 Duplex.ifc
    |
    |-- 1  validate   extension and ISO-10303-21 header            Plumb.Ifc
-   |-- 2  read       spatial structure, properties, units         Plumb.Ifc
-   |-- 3  geometry   IfcConvert writes model.glb into the draft   Plumb.Geometry
-   |-- 4  write      database, index and manifest into the draft  Plumb.Package
-   '-- 5  publish    rename the draft to Duplex.plumb             Plumb.Import
+   |-- 2  snapshot   copy the source next to the draft, hash it   Plumb.Import
+   |-- 3  read       spatial structure, properties, units         Plumb.Ifc
+   |-- 4  geometry   IfcConvert writes model.glb, alongside 3     Plumb.Geometry
+   |-- 5  write      database, index and manifest into the draft  Plumb.Package
+   '-- 6  publish    rename the draft to Duplex.plumb             Plumb.Import
                      (an existing package is replaced only here)
 ```
 
-The draft is a dot-prefixed folder next to the target. Cancelling or failing at any step deletes it and leaves an existing package untouched; cancelling during step 3 also stops IfcConvert. Because the draft sits in the same folder as the target, publishing is a rename, not a copy.
+Steps 3 and 4 read the same snapshot, so the model, the geometry and the manifest hash always describe the same bytes, even if the source is saved again during the import. The draft and the snapshot are dot-prefixed folders next to the target. Cancelling, or a failure that stops the import, deletes both, stops IfcConvert and leaves an existing package untouched. Because the draft sits in the same folder as the target, publishing is a rename, not a copy.
 
 ### Package format
 

@@ -28,6 +28,7 @@ internal sealed class PackageDraft : IDisposable
 
         // Same folder as the target, so publishing is a rename rather than a copy.
         Location = Path.Combine(directory, $".{name}.{suffix}.draft");
+        SourceFolder = Path.Combine(directory, $".{name}.{suffix}.source");
         _backup = Path.Combine(directory, $".{name}.{suffix}.old");
         _target = target;
         _logger = logger;
@@ -42,6 +43,9 @@ internal sealed class PackageDraft : IDisposable
     }
 
     public string Location { get; }
+
+    /// <summary>Where the snapshot of the source file goes; removed on dispose, never published.</summary>
+    public string SourceFolder { get; }
 
     /// <summary>
     /// Moves the draft into place. An existing package is set aside first and restored if the move fails.
@@ -72,6 +76,7 @@ internal sealed class PackageDraft : IDisposable
     public void Dispose()
     {
         DeleteIfExists(Location);
+        DeleteIfExists(SourceFolder);
         if (_state == DraftState.Published)
         {
             DeleteIfExists(_backup);
