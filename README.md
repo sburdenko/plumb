@@ -31,6 +31,7 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 ## Features
 
 - Opens IFC2X3 and IFC4 files by drag and drop or from a file dialog.
+- Starts on a list of recent models, newest first, with pinned ones on top. A model opens from its package unless the IFC file was saved since, and files that were moved or deleted are marked instead of silently dropped.
 - Shows the spatial structure: project, site, building and storeys sorted by elevation, with elements grouped by IFC type. Parts of aggregates, such as stair flights, appear under their parent element and keep its storey.
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.

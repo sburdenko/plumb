@@ -16,5 +16,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Plumb.App/Themes/Controls.axaml" />
+        <StyleInclude Source="avares://Plumb.App/Themes/RecentModels.axaml" />
     </Application.Styles>
 </Application>
