@@ -10,7 +10,7 @@ public sealed class ImportServiceErrorTests
     private const string StepHeaderWithoutProject =
         "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('x','2026-01-01T00:00:00',(''),(''),'','','');\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\n#1=IFCCARTESIANPOINT((0.,0.,0.));\nENDSEC;\nEND-ISO-10303-21;\n";
 
-    private readonly ImportService _service = new(NullLogger<ImportService>.Instance);
+    private readonly ImportService _service = new(NullLogger<ImportService>.Instance, FakeGeometryConverter.Builds());
     private readonly IProgress<ImportProgress> _noProgress = new SyncProgress<ImportProgress>(_ => { });
     private TempDirectory _output = null!;
 
@@ -100,7 +100,7 @@ public sealed class ImportServiceErrorTests
     }
 
     [TestCase(10)]
-    [TestCase(90)]
+    [TestCase(55)]
     public async Task CancelWhileReadingReturnsCancelled(int atPercent)
     {
         using var cts = new CancellationTokenSource();

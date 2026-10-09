@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
 
@@ -17,6 +18,8 @@ internal static class PackageJson
         WriteIndented = true,
         RespectRequiredConstructorParameters = true,
         RespectNullableAnnotations = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() },
     };
 
     public static void WriteManifest(string path, PackageManifest manifest) =>

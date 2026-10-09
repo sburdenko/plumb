@@ -8,12 +8,15 @@ using Plumb.App.Services;
 using Plumb.App.ViewModels;
 using Plumb.App.Views;
 using Plumb.Import;
+using Plumb.Geometry;
 using Plumb.Ifc;
 
 namespace Plumb.App;
 
 public sealed partial class App : Application
 {
+    private static readonly TimeSpan GeometryTimeout = TimeSpan.FromMinutes(10);
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
@@ -28,7 +31,9 @@ public sealed partial class App : Application
 
             var window = new MainWindow();
             var viewModel = new MainWindowViewModel(
-                new ImportService(loggerFactory.CreateLogger<ImportService>()),
+                new ImportService(
+                    loggerFactory.CreateLogger<ImportService>(),
+                    new IfcConvertRunner(IfcConvertRunner.DefaultExecutablePath, GeometryTimeout, loggerFactory.CreateLogger<IfcConvertRunner>())),
                 new StorageFilePickerService(window),
                 new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
                 loggerFactory.CreateLogger<MainWindowViewModel>());

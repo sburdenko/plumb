@@ -19,7 +19,7 @@ public sealed class ImportServiceDuplexTests
     public async Task ImportDuplex()
     {
         _temp = new TempDirectory();
-        var service = new ImportService(NullLogger<ImportService>.Instance);
+        var service = new ImportService(NullLogger<ImportService>.Instance, FakeGeometryConverter.Builds());
         var result = await service.RunAsync(
             Samples.Duplex, _temp.Path, new SyncProgress<ImportProgress>(_progress.Add), CancellationToken.None);
 
