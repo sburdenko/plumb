@@ -16,6 +16,7 @@ namespace Plumb.Viewer
         private const string ElementIndexFile = "elements.json";
         private const int FramesBeforeScreenshot = 5;
         private const int FramesBeforeQuit = 5;
+        private const double ColliderBudgetMilliseconds = 5;
         private const string Help = "Left drag: rotate    Shift or middle drag: pan    Wheel: zoom    Click: select    F: frame";
 
         private readonly ClickGesture _click = new ClickGesture();
@@ -30,6 +31,7 @@ namespace Plumb.Viewer
         private GltfImport _import;
         private Task<bool> _pending;
         private Transform _model;
+        private ColliderBuilder _colliders;
         private ElementInfo _selected;
         private int _screenshotCountdown = -1;
         private int _quitCountdown = -1;
@@ -48,6 +50,7 @@ namespace Plumb.Viewer
             _arguments = arguments;
             _camera = viewCamera;
             _orbit = orbit;
+            _orbit.IsOverUi = IsPointerOverUi;
             StartLoading();
         }
 
@@ -101,6 +104,7 @@ namespace Plumb.Viewer
                     PollBuilding();
                     break;
                 case ViewerState.Ready:
+                    BuildColliders();
                     HandleInput();
                     break;
             }
@@ -139,16 +143,36 @@ namespace Plumb.Viewer
                 return;
             }
 
-            AddColliders();
+            _colliders = new ColliderBuilder(_model.GetComponentsInChildren<MeshFilter>());
+            if (RendererBounds.TryEncapsulate(_model.GetComponentsInChildren<Renderer>(), out var scene))
+            {
+                _orbit.SetScene(scene);
+            }
+
             FrameModel();
             SelectRequestedElement();
             Finish(ViewerState.Ready, null);
         }
 
+        private void BuildColliders()
+        {
+            if (_colliders == null || _colliders.Done)
+            {
+                return;
+            }
+
+            _colliders.Advance(ColliderBudgetMilliseconds);
+            _message = _colliders.Done ? null : $"Preparing selection… {_colliders.Progress:P0}";
+            if (_colliders.Done && _arguments.TakesScreenshot)
+            {
+                _screenshotCountdown = FramesBeforeScreenshot;
+            }
+        }
+
         private void HandleInput()
         {
             var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            if (Input.GetMouseButtonDown(0) && !shift)
+            if (Input.GetMouseButtonDown(0) && !shift && !IsPointerOverUi(Input.mousePosition))
             {
                 _click.Press(Input.mousePosition);
             }
@@ -217,17 +241,6 @@ namespace Plumb.Viewer
             }
         }
 
-        private void AddColliders()
-        {
-            foreach (var filter in _model.GetComponentsInChildren<MeshFilter>())
-            {
-                if (filter.sharedMesh != null)
-                {
-                    filter.gameObject.AddComponent<MeshCollider>().sharedMesh = filter.sharedMesh;
-                }
-            }
-        }
-
         private void FrameModel()
         {
             if (RendererBounds.TryEncapsulate(_model.GetComponentsInChildren<Renderer>(), out var bounds))
@@ -253,11 +266,15 @@ namespace Plumb.Viewer
             _state = state;
             _message = message;
             _orbit.Enabled = state == ViewerState.Ready;
-            if (_arguments.TakesScreenshot)
+
+            // A ready viewer is captured once every element is clickable; see BuildColliders.
+            if (_arguments.TakesScreenshot && state != ViewerState.Ready)
             {
                 _screenshotCountdown = FramesBeforeScreenshot;
             }
         }
+
+        private bool IsPointerOverUi(Vector2 pointer) => _selected != null && ElementPanel.Contains(pointer, Screen.height);
 
         private void AdvanceScreenshot()
         {

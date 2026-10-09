@@ -10,10 +10,18 @@ namespace Plumb.Viewer
         private const float LabelWidth = 72f;
         private const string None = "—";
 
+        /// <summary>Where the panel is drawn, in IMGUI coordinates (origin top left).</summary>
+        public static Rect Area(float screenHeight) => new Rect(16, screenHeight - Height - 44, Width, Height);
+
+        /// <param name="pointer">A position from <c>Input.mousePosition</c>, whose origin is bottom left.</param>
+        public static bool Contains(Vector2 pointer, float screenHeight)
+        {
+            return Area(screenHeight).Contains(new Vector2(pointer.x, screenHeight - pointer.y));
+        }
+
         public static void Draw(ElementInfo element)
         {
-            var area = new Rect(16, Screen.height - Height - 44, Width, Height);
-            GUILayout.BeginArea(area, ViewerStyles.Panel);
+            GUILayout.BeginArea(Area(Screen.height), ViewerStyles.Panel);
             GUILayout.Label(element.Name ?? element.Type, ViewerStyles.Title);
             Row("Type", element.Type);
             Row("Storey", element.Storey);
