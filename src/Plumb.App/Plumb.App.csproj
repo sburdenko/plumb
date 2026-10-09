@@ -8,6 +8,9 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\Fonts\OFL.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Plumb.Import\Plumb.Import.csproj" />
   </ItemGroup>
   <ItemGroup>
