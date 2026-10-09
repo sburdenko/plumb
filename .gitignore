@@ -9,3 +9,4 @@ TestResults/
 samples/*.ifc
 samples/*.download
 *.plumb/
+tools/ifcconvert/

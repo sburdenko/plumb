@@ -34,6 +34,15 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
+      - uses: actions/cache@v6
+        with:
+          path: tools/ifcconvert
+          key: ifcconvert-${{ runner.os }}-${{ hashFiles('tools/fetch-ifcconvert.sh') }}
+
+      - name: Fetch IfcConvert
+        shell: bash
+        run: tools/fetch-ifcconvert.sh
+
       - name: Fetch sample model
         shell: bash
         run: samples/fetch-samples.sh
