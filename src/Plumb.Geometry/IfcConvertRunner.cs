@@ -42,8 +42,8 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
         ProcessStarted?.Invoke(process.Id);
 
         // Both streams are drained while the process runs; a full pipe buffer would otherwise block it.
-        var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
-        var errors = process.StandardError.ReadToEndAsync(CancellationToken.None);
+        var output = ReadAllAsync(process.StandardOutput.BaseStream);
+        var errors = ReadAllAsync(process.StandardError.BaseStream);
 
         var outcome = await WaitAsync(process, cancellationToken).ConfigureAwait(false);
         var log = await CollectOutputAsync(output, errors).ConfigureAwait(false);
@@ -127,6 +127,13 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
         }
 
         return string.Join('\n', new[] { output, errors }.Where(t => t.IsCompletedSuccessfully).Select(t => t.Result));
+    }
+
+    private static async Task<string> ReadAllAsync(Stream stream)
+    {
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer).ConfigureAwait(false);
+        return ConsoleText.Decode(buffer.ToArray());
     }
 
     private async Task StopAsync(Process process)
