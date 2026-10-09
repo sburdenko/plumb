@@ -60,8 +60,11 @@ public sealed partial class LoadedViewModel : ViewModelBase
     [ObservableProperty]
     public partial ElementDetailsViewModel? SelectedElement { get; private set; }
 
+    [ObservableProperty]
+    public partial string? RevealError { get; private set; }
+
     [RelayCommand]
-    private void Reveal() => _revealer.Reveal(PackagePath);
+    private void Reveal() => RevealError = _revealer.TryReveal(PackagePath, out var error) ? null : error;
 
     partial void OnSearchTextChanged(string? value)
     {

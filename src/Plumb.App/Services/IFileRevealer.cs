@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Plumb.App.Services;
 
 /// <summary>
@@ -8,5 +10,6 @@ public interface IFileRevealer
     /// <summary>Button text for this platform, e.g. "Show in Finder".</summary>
     string ActionLabel { get; }
 
-    void Reveal(string path);
+    /// <param name="error">A message for the user when the file manager could not be opened.</param>
+    bool TryReveal(string path, [NotNullWhen(false)] out string? error);
 }

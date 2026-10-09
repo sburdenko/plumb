@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plumb.App.Services;
 using Plumb.App.ViewModels;
@@ -178,6 +179,19 @@ public sealed class MainWindowViewModelTests
         Assert.That(_revealer.Revealed, Is.EqualTo(new[] { "/models/a.plumb" }));
     }
 
+    [Test]
+    public async Task FailedRevealShowsTheReason()
+    {
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        _revealer.Failure = "The package no longer exists.";
+
+        loaded.RevealCommand.Execute(null);
+
+        Assert.That(loaded.RevealError, Is.EqualTo("The package no longer exists."));
+    }
+
     private async Task CancelBlockingImportAsync(string path)
     {
         var import = _viewModel.OpenPathCommand.ExecuteAsync(path);
@@ -249,6 +263,13 @@ public sealed class MainWindowViewModelTests
 
         public List<string> Revealed { get; } = [];
 
-        public void Reveal(string path) => Revealed.Add(path);
+        public string? Failure { get; set; }
+
+        public bool TryReveal(string path, [NotNullWhen(false)] out string? error)
+        {
+            Revealed.Add(path);
+            error = Failure;
+            return error == null;
+        }
     }
 }
