@@ -9,7 +9,11 @@ url="https://raw.githubusercontent.com/youshengCode/IfcSampleFiles/${source_comm
 expected_sha256="b347a2c8aa8fff6db896a4417a9c50c22ac0ccd7c5cfc22b99b8d29336c606ed"
 
 curl -fsSL -o Duplex.ifc.download "$url"
-actual_sha256="$(shasum -a 256 Duplex.ifc.download | cut -d' ' -f1)"
+if command -v sha256sum >/dev/null; then
+    actual_sha256="$(sha256sum Duplex.ifc.download | cut -d' ' -f1)"
+else
+    actual_sha256="$(shasum -a 256 Duplex.ifc.download | cut -d' ' -f1)"
+fi
 if [[ "$actual_sha256" != "$expected_sha256" ]]; then
     rm -f Duplex.ifc.download
     echo "Checksum mismatch for Duplex.ifc: got $actual_sha256" >&2

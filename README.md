@@ -1,5 +1,7 @@
 # Plumb
 
+[![CI](https://github.com/sburdenko/plumb/actions/workflows/ci.yml/badge.svg)](https://github.com/sburdenko/plumb/actions/workflows/ci.yml)
+
 Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial structure and the properties of every element, and keep the result as a `.plumb` package that reopens in milliseconds.
 
 ```
