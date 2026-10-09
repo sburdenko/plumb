@@ -22,6 +22,7 @@ public sealed class MainWindowViewModelTests
     private FakeFilePicker _picker = null!;
     private FakeRevealer _revealer = null!;
     private FakeViewerLauncher _viewer = null!;
+    private FakeRecentModelStore _recent = null!;
     private MainWindowViewModel _viewModel = null!;
 
     [SetUp]
@@ -31,7 +32,9 @@ public sealed class MainWindowViewModelTests
         _picker = new FakeFilePicker();
         _revealer = new FakeRevealer();
         _viewer = new FakeViewerLauncher();
-        _viewModel = new MainWindowViewModel(_importService, _picker, _revealer, _viewer, NullLogger<MainWindowViewModel>.Instance);
+        _recent = new FakeRecentModelStore();
+        _viewModel = new MainWindowViewModel(
+            _importService, _picker, _revealer, _viewer, _recent, TimeProvider.System, NullLogger<MainWindowViewModel>.Instance);
     }
 
     [Test]
@@ -50,6 +53,32 @@ public sealed class MainWindowViewModelTests
 
         Assert.That(_viewModel.CurrentState, Is.TypeOf<LoadedViewModel>());
         Assert.That(((LoadedViewModel)_viewModel.CurrentState).FileName, Is.EqualTo("a.ifc"));
+    }
+
+    [Test]
+    public async Task ASuccessfulOpenIsRemembered()
+    {
+        _importService.Next = Loaded;
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        Assert.That(_recent.Saved.Models.Single().PackagePath, Is.EqualTo(Path.GetFullPath("/models/a.plumb")));
+    }
+
+    [Test]
+    public async Task AFailedOpenIsNotRemembered()
+    {
+        _importService.Next = new ImportResult.Failure(ImportError.ParseFailed, "broken");
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        Assert.That(_recent.SaveCount, Is.Zero);
+    }
+
+    [Test]
+    public void TheEmptyStateListsRecentModels()
+    {
+        Assert.That(((EmptyStateViewModel)_viewModel.CurrentState).Recent, Is.Not.Null);
     }
 
     [Test]
@@ -383,22 +412,6 @@ public sealed class MainWindowViewModelTests
         public bool TryOpen(string packagePath, [NotNullWhen(false)] out string? error)
         {
             Opened.Add(packagePath);
-            error = Failure;
-            return error == null;
-        }
-    }
-
-    private sealed class FakeRevealer : IFileRevealer
-    {
-        public string ActionLabel => "Show in Test";
-
-        public List<string> Revealed { get; } = [];
-
-        public string? Failure { get; set; }
-
-        public bool TryReveal(string path, [NotNullWhen(false)] out string? error)
-        {
-            Revealed.Add(path);
             error = Failure;
             return error == null;
         }

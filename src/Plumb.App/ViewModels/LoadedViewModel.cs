@@ -46,7 +46,7 @@ public sealed partial class LoadedViewModel : ViewModelBase
         LoadLabel = loaded.OpenedPackage ? "Opened in" : "Imported in";
         LoadTime = Durations.Format(loaded.LoadTime);
         Counts = string.Format(CultureInfo.InvariantCulture, "{0:N0} elements · {1:N0} values", model.Elements.Count, model.Properties.Count);
-        Viewport = ViewportFor(_package, SourcePathOf(loaded, model.SourceFile));
+        Viewport = ViewportFor(_package, loaded.FindSourcePath());
         StatusItems = StatusItemsFor(_package);
         Nodes = BuildNodes(_tree, expandAll: false);
     }
@@ -212,19 +212,6 @@ public sealed partial class LoadedViewModel : ViewModelBase
         ],
         _ => throw new System.Diagnostics.UnreachableException(),
     };
-
-    /// <summary>The IFC file this model came from, if it can be found to import again.</summary>
-    private static string? SourcePathOf(LoadedModel loaded, string sourceFile)
-    {
-        if (!loaded.OpenedPackage)
-        {
-            return loaded.OpenedPath;
-        }
-
-        var folder = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(loaded.OpenedPath));
-        var candidate = folder == null ? null : Path.Combine(folder, sourceFile);
-        return candidate != null && File.Exists(candidate) ? candidate : null;
-    }
 
     private static string? ProjectNameOf(IReadOnlyList<ElementRecord> elements)
     {

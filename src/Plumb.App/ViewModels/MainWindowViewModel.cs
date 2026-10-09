@@ -2,6 +2,7 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Plumb.App.Recent;
 using Plumb.App.Services;
 using Plumb.Core.Import;
 using Plumb.Core.Package;
@@ -9,7 +10,7 @@ using Plumb.Core.Package;
 namespace Plumb.App.ViewModels;
 
 /// <summary>
-/// Owns the window state: empty, importing or loaded. A failed import returns to empty with the error.
+/// Owns the window state: empty, importing, failed or loaded, and remembers every model that opens.
 /// </summary>
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
@@ -19,12 +20,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IViewerLauncher _viewer;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly OpenCommands _open;
+    private readonly RecentModelsViewModel _recent;
 
     public MainWindowViewModel(
         IImportService importService,
         IFilePickerService filePicker,
         IFileRevealer revealer,
         IViewerLauncher viewer,
+        IRecentModelStore recentModels,
+        TimeProvider clock,
         ILogger<MainWindowViewModel> logger)
     {
         _importService = importService;
@@ -33,7 +37,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _viewer = viewer;
         _logger = logger;
         _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand, OpenPathCommand);
-        CurrentState = new EmptyStateViewModel(_open, errorMessage: null);
+        _recent = new RecentModelsViewModel(recentModels, OpenPathCommand, revealer, clock);
+        CurrentState = Empty(errorMessage: null);
     }
 
     [ObservableProperty]
@@ -78,7 +83,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while opening {Path}", path);
-            CurrentState = new EmptyStateViewModel(_open, $"Unexpected error: {ex.Message}");
+            CurrentState = Empty($"Unexpected error: {ex.Message}");
         }
     }
 
@@ -103,7 +108,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "File picker failed");
-            CurrentState = new EmptyStateViewModel(_open, $"Cannot open the file picker: {ex.Message}");
+            CurrentState = Empty($"Cannot open the file picker: {ex.Message}");
             return;
         }
 
@@ -117,11 +122,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private ViewModelBase NextState(ImportResult result, ViewModelBase previous, string path, bool openedPackage, TimeSpan loadTime) =>
         result switch
         {
-            ImportResult.Success success => new LoadedViewModel(new LoadedModel(success, path, openedPackage, loadTime), _open, _revealer, _viewer),
+            ImportResult.Success success => Loaded(new LoadedModel(success, path, openedPackage, loadTime)),
             ImportResult.Failure { Error: ImportError.Cancelled } => previous is LoadedViewModel
                 ? previous
-                : new EmptyStateViewModel(_open, errorMessage: null),
+                : Empty(errorMessage: null),
             ImportResult.Failure failure => new FailedViewModel(path, failure.Message, _open),
             _ => throw new UnreachableException(),
         };
+
+    private LoadedViewModel Loaded(LoadedModel model)
+    {
+        _recent.Record(model);
+        return new LoadedViewModel(model, _open, _revealer, _viewer);
+    }
+
+    private EmptyStateViewModel Empty(string? errorMessage)
+    {
+        _recent.Refresh();
+        return new EmptyStateViewModel(_open, errorMessage, _recent);
+    }
 }
