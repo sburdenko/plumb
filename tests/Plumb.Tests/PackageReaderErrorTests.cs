@@ -65,6 +65,32 @@ public sealed class PackageReaderErrorTests
             Throws.InstanceOf<PackageFormatException>().With.Message.Contains("99"));
     }
 
+    [TestCase("sourceFile")]
+    [TestCase("ifcSchema")]
+    [TestCase("elementCount")]
+    public void ManifestMissingFieldIsAFormatError(string field)
+    {
+        var path = Path.Combine(_package, PackageLayout.ManifestFile);
+        var manifest = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        manifest.Remove(field);
+        File.WriteAllText(path, manifest.ToJsonString());
+
+        Assert.That(
+            () => PackageReader.Read(_package, CancellationToken.None),
+            Throws.InstanceOf<PackageFormatException>().With.Message.Contains(field));
+    }
+
+    [Test]
+    public void ManifestWithNullSourceFileIsAFormatError()
+    {
+        var path = Path.Combine(_package, PackageLayout.ManifestFile);
+        var manifest = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        manifest["sourceFile"] = null;
+        File.WriteAllText(path, manifest.ToJsonString());
+
+        Assert.That(() => PackageReader.Read(_package, CancellationToken.None), Throws.InstanceOf<PackageFormatException>());
+    }
+
     [Test]
     public void DatabaseThatIsNotSqliteIsAFormatError()
     {

@@ -9,10 +9,14 @@ namespace Plumb.Package;
 /// </summary>
 internal static class PackageJson
 {
+    // By default System.Text.Json fills missing constructor parameters with defaults and ignores
+    // nullable annotations, so a manifest without "sourceFile" would load with a null name.
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
+        RespectRequiredConstructorParameters = true,
+        RespectNullableAnnotations = true,
     };
 
     public static void WriteManifest(string path, PackageManifest manifest) =>
