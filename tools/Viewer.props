@@ -8,13 +8,22 @@
     <ViewerBuildSource>$(MSBuildThisFileDirectory)../viewer-build/</ViewerBuildSource>
   </PropertyGroup>
 
-  <Target Name="CopyViewerBuild" AfterTargets="Build" Condition="Exists('$(ViewerBuildSource)')">
+  <Target Name="CollectViewerBuild">
     <ItemGroup>
       <ViewerBuildFile Include="$(ViewerBuildSource)**"
                        Exclude="$(ViewerBuildSource)*DoNotShip*/**;$(ViewerBuildSource)*DontShipItWithYourGame*/**" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="CopyViewerBuild" AfterTargets="Build" DependsOnTargets="CollectViewerBuild" Condition="Exists('$(ViewerBuildSource)')">
     <Copy SourceFiles="@(ViewerBuildFile)"
           DestinationFiles="@(ViewerBuildFile->'$(OutDir)viewer-build/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="PublishViewerBuild" AfterTargets="Publish" DependsOnTargets="CollectViewerBuild" Condition="Exists('$(ViewerBuildSource)')">
+    <Copy SourceFiles="@(ViewerBuildFile)"
+          DestinationFiles="@(ViewerBuildFile->'$(PublishDir)viewer-build/%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
   </Target>
 </Project>

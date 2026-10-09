@@ -11,3 +11,4 @@ samples/*.download
 *.plumb/
 tools/ifcconvert/
 viewer-build/
+dist/
