@@ -1,0 +1,6 @@
+{
+  "name": "Plumb.Viewer",
+  "rootNamespace": "Plumb.Viewer",
+  "references": ["glTFast"],
+  "autoReferenced": true
+}

@@ -10,3 +10,4 @@ samples/*.ifc
 samples/*.download
 *.plumb/
 tools/ifcconvert/
+viewer-build/
