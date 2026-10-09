@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Plumb.App.Services;
 using Plumb.Core.Import;
+using Plumb.Core.Package;
 
 namespace Plumb.App.ViewModels;
 
@@ -14,49 +15,45 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IImportService _importService;
     private readonly IFilePickerService _filePicker;
+    private readonly IFileRevealer _revealer;
     private readonly ILogger<MainWindowViewModel> _logger;
+    private readonly OpenCommands _open;
 
-    public MainWindowViewModel(IImportService importService, IFilePickerService filePicker, ILogger<MainWindowViewModel> logger)
+    public MainWindowViewModel(
+        IImportService importService,
+        IFilePickerService filePicker,
+        IFileRevealer revealer,
+        ILogger<MainWindowViewModel> logger)
     {
         _importService = importService;
         _filePicker = filePicker;
+        _revealer = revealer;
         _logger = logger;
-        CurrentState = new EmptyStateViewModel(BrowseCommand, errorMessage: null);
+        _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand);
+        CurrentState = new EmptyStateViewModel(_open, errorMessage: null);
     }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(BrowseCommand))]
-    [NotifyCanExecuteChangedFor(nameof(ImportFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenIfcCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenPackageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenPathCommand))]
     public partial ViewModelBase CurrentState { get; private set; }
 
-    private bool CanStartImport() => CurrentState is not ImportingViewModel;
+    private bool CanStartLoading() => CurrentState is not ImportingViewModel;
 
-    private bool CanImportFile(string? path) => CanStartImport() && !string.IsNullOrWhiteSpace(path);
+    private bool CanOpenPath(string? path) => CanStartLoading() && !string.IsNullOrWhiteSpace(path);
 
-    [RelayCommand(CanExecute = nameof(CanStartImport))]
-    private async Task BrowseAsync()
-    {
-        string? path;
-        try
-        {
-            path = await _filePicker.PickIfcFileAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "File picker failed");
-            CurrentState = new EmptyStateViewModel(BrowseCommand, $"Cannot open the file picker: {ex.Message}");
-            return;
-        }
+    [RelayCommand(CanExecute = nameof(CanStartLoading))]
+    private Task OpenIfcAsync() => PickAndOpenAsync(_filePicker.PickIfcFileAsync);
 
-        // A file may have been dropped while the picker was open.
-        if (path != null && CanImportFile(path))
-        {
-            await ImportFileAsync(path);
-        }
-    }
+    [RelayCommand(CanExecute = nameof(CanStartLoading))]
+    private Task OpenPackageAsync() => PickAndOpenAsync(_filePicker.PickPackageAsync);
 
-    [RelayCommand(CanExecute = nameof(CanImportFile))]
-    private async Task ImportFileAsync(string? path)
+    /// <summary>
+    /// Opens a <c>.plumb</c> package as is, or imports anything else as an IFC file.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanOpenPath))]
+    private async Task OpenPathAsync(string? path)
     {
         if (path == null)
         {
@@ -65,29 +62,60 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         var previous = CurrentState;
         using var cancellation = new CancellationTokenSource();
-        var importing = new ImportingViewModel(Path.GetFileName(path), cancellation);
+        var importing = new ImportingViewModel(Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar)), cancellation);
         CurrentState = importing;
 
         try
         {
-            var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
-            var result = await _importService.RunAsync(path, outputDirectory, new Progress<ImportProgress>(importing.Report), cancellation.Token);
+            var result = await LoadAsync(path, new Progress<ImportProgress>(importing.Report), cancellation.Token);
             CurrentState = NextState(result, previous);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while importing {Path}", path);
-            CurrentState = new EmptyStateViewModel(BrowseCommand, $"Unexpected error: {ex.Message}");
+            _logger.LogError(ex, "Unexpected error while opening {Path}", path);
+            CurrentState = new EmptyStateViewModel(_open, $"Unexpected error: {ex.Message}");
+        }
+    }
+
+    private Task<ImportResult> LoadAsync(string path, IProgress<ImportProgress> progress, CancellationToken cancellationToken)
+    {
+        if (PackageLayout.IsPackagePath(path))
+        {
+            return _importService.OpenPackageAsync(path, progress, cancellationToken);
+        }
+
+        var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
+        return _importService.RunAsync(path, outputDirectory, progress, cancellationToken);
+    }
+
+    private async Task PickAndOpenAsync(Func<Task<string?>> pick)
+    {
+        string? path;
+        try
+        {
+            path = await pick();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "File picker failed");
+            CurrentState = new EmptyStateViewModel(_open, $"Cannot open the file picker: {ex.Message}");
+            return;
+        }
+
+        // A file may have been dropped while the picker was open.
+        if (path != null && CanOpenPath(path))
+        {
+            await OpenPathAsync(path);
         }
     }
 
     private ViewModelBase NextState(ImportResult result, ViewModelBase previous) => result switch
     {
-        ImportResult.Success success => new LoadedViewModel(success.Model, success.ImportDuration, BrowseCommand),
+        ImportResult.Success success => new LoadedViewModel(success, _open, _revealer),
         ImportResult.Failure { Error: ImportError.Cancelled } => previous is LoadedViewModel
             ? previous
-            : new EmptyStateViewModel(BrowseCommand, errorMessage: null),
-        ImportResult.Failure failure => new EmptyStateViewModel(BrowseCommand, failure.Message),
+            : new EmptyStateViewModel(_open, errorMessage: null),
+        ImportResult.Failure failure => new EmptyStateViewModel(_open, failure.Message),
         _ => throw new UnreachableException(),
     };
 }

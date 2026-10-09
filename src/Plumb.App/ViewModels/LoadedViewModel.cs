@@ -1,6 +1,8 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Plumb.App.Services;
+using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Tree;
 
@@ -14,8 +16,11 @@ public sealed partial class LoadedViewModel : ViewModelBase
     private readonly ILookup<string, PropertyRecord> _propertiesByElement;
     private readonly IReadOnlyDictionary<string, ElementRecord> _elementsById;
 
-    public LoadedViewModel(IfcModelData model, TimeSpan importDuration, IAsyncRelayCommand browseCommand)
+    private readonly IFileRevealer _revealer;
+
+    public LoadedViewModel(ImportResult.Success result, OpenCommands open, IFileRevealer revealer)
     {
+        var model = result.Model;
         _tree = ModelTreeBuilder.Build(model.Elements);
         _propertiesByElement = model.Properties.ToLookup(p => p.GlobalId);
         _elementsById = model.Elements.ToDictionary(e => e.GlobalId);
@@ -26,8 +31,10 @@ public sealed partial class LoadedViewModel : ViewModelBase
             "{0} · {1} elements · imported in {2:0.0} s",
             model.IfcSchema,
             model.Elements.Count,
-            importDuration.TotalSeconds);
-        BrowseCommand = browseCommand;
+            result.ImportDuration.TotalSeconds);
+        PackagePath = result.PackagePath;
+        Open = open;
+        _revealer = revealer;
         Nodes = ToViewModels(_tree, expandAll: false);
     }
 
@@ -35,7 +42,11 @@ public sealed partial class LoadedViewModel : ViewModelBase
 
     public string Summary { get; }
 
-    public IAsyncRelayCommand BrowseCommand { get; }
+    public string PackagePath { get; }
+
+    public OpenCommands Open { get; }
+
+    public string RevealLabel => _revealer.ActionLabel;
 
     [ObservableProperty]
     public partial string? SearchText { get; set; }
@@ -48,6 +59,9 @@ public sealed partial class LoadedViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial ElementDetailsViewModel? SelectedElement { get; private set; }
+
+    [RelayCommand]
+    private void Reveal() => _revealer.Reveal(PackagePath);
 
     partial void OnSearchTextChanged(string? value)
     {
