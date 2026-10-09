@@ -1,6 +1,6 @@
 using Xbim.Ifc4.Interfaces;
 
-namespace Plumb.Import.Xbim;
+namespace Plumb.Ifc;
 
 /// <summary>
 /// Resolves the display unit of a measure value from the project's default units,

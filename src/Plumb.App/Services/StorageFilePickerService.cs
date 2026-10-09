@@ -18,4 +18,15 @@ public sealed class StorageFilePickerService(TopLevel topLevel) : IFilePickerSer
 
         return files.Count == 0 ? null : files[0].TryGetLocalPath();
     }
+
+    public async Task<string?> PickPackageAsync()
+    {
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Open Plumb package",
+            AllowMultiple = false,
+        });
+
+        return folders.Count == 0 ? null : folders[0].TryGetLocalPath();
+    }
 }

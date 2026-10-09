@@ -8,3 +8,4 @@ obj/
 TestResults/
 samples/*.ifc
 samples/*.download
+*.plumb/

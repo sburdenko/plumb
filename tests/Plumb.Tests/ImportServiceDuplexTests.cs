@@ -13,16 +13,22 @@ public sealed class ImportServiceDuplexTests
 {
     private IfcModelData _model = null!;
     private readonly List<ImportProgress> _progress = [];
+    private TempDirectory _temp = null!;
 
     [OneTimeSetUp]
     public async Task ImportDuplex()
     {
+        _temp = new TempDirectory();
         var service = new ImportService(NullLogger<ImportService>.Instance);
-        var result = await service.RunAsync(Samples.Duplex, new SyncProgress<ImportProgress>(_progress.Add), CancellationToken.None);
+        var result = await service.RunAsync(
+            Samples.Duplex, _temp.Path, new SyncProgress<ImportProgress>(_progress.Add), CancellationToken.None);
 
         Assert.That(result, Is.TypeOf<ImportResult.Success>(), () => result.ToString());
         _model = ((ImportResult.Success)result).Model;
     }
+
+    [OneTimeTearDown]
+    public void DeletePackage() => _temp.Dispose();
 
     [Test]
     public void ReportsSourceFileAndSchema()

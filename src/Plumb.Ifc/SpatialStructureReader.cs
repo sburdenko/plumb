@@ -1,7 +1,7 @@
 using Plumb.Core.Model;
 using Xbim.Ifc4.Interfaces;
 
-namespace Plumb.Import.Xbim;
+namespace Plumb.Ifc;
 
 internal readonly record struct SpatialEntry(ElementRecord Record, IIfcObjectDefinition Source);
 

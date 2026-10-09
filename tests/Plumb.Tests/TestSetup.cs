@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Plumb.Import.Xbim;
+using Plumb.Ifc;
 
 namespace Plumb.Tests;
 

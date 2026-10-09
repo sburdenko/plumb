@@ -1,7 +1,7 @@
 using System.Globalization;
 using Xbim.Ifc4.Interfaces;
 
-namespace Plumb.Import.Xbim;
+namespace Plumb.Ifc;
 
 internal static class IfcValueFormatter
 {

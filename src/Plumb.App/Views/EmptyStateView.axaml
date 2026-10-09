@@ -12,13 +12,16 @@
             <TextBlock Text="Drop an IFC file here"
                        FontSize="28"
                        HorizontalAlignment="Center" />
-            <TextBlock Text="or"
+            <TextBlock Text="or a .plumb package saved by a previous import"
                        Opacity="0.6"
                        HorizontalAlignment="Center" />
-            <Button Content="Open IFC…"
-                    Command="{Binding BrowseCommand}"
-                    HorizontalAlignment="Center"
-                    Classes="accent" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                <Button Content="Open IFC…"
+                        Command="{Binding Open.OpenIfc}"
+                        Classes="accent" />
+                <Button Content="Open Package…"
+                        Command="{Binding Open.OpenPackage}" />
+            </StackPanel>
             <TextBlock Text="{Binding ErrorMessage}"
                        IsVisible="{Binding HasError}"
                        Foreground="{DynamicResource PlumbErrorBrush}"

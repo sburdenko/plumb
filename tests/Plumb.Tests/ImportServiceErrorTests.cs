@@ -12,13 +12,35 @@ public sealed class ImportServiceErrorTests
 
     private readonly ImportService _service = new(NullLogger<ImportService>.Instance);
     private readonly IProgress<ImportProgress> _noProgress = new SyncProgress<ImportProgress>(_ => { });
+    private TempDirectory _output = null!;
+
+    private string Output => _output.Path;
+
+    [SetUp]
+    public void CreateOutput() => _output = new TempDirectory();
+
+    [TearDown]
+    public void DeleteOutput() => _output.Dispose();
 
     [Test]
     public async Task MissingFileReturnsFileNotFound()
     {
-        var result = await _service.RunAsync("/definitely/not/here.ifc", _noProgress, CancellationToken.None);
+        var result = await _service.RunAsync("/definitely/not/here.ifc", Output, _noProgress, CancellationToken.None);
 
         AssertFailure(result, ImportError.FileNotFound);
+    }
+
+    [Test]
+    public async Task PlainFolderReturnsNotIfcWithAClearMessage()
+    {
+        using var temp = new TempDirectory();
+        var folder = Path.Combine(temp.Path, "Drawings");
+        Directory.CreateDirectory(folder);
+
+        var result = await _service.RunAsync(folder, Output, _noProgress, CancellationToken.None);
+
+        AssertFailure(result, ImportError.NotIfc);
+        Assert.That(((ImportResult.Failure)result).Message, Does.Contain("folder"));
     }
 
     [Test]
@@ -27,7 +49,7 @@ public sealed class ImportServiceErrorTests
         using var temp = new TempDirectory();
         var path = temp.WriteFile("model.txt", StepHeaderWithoutProject);
 
-        var result = await _service.RunAsync(path, _noProgress, CancellationToken.None);
+        var result = await _service.RunAsync(path, Output, _noProgress, CancellationToken.None);
 
         AssertFailure(result, ImportError.NotIfc);
     }
@@ -38,7 +60,7 @@ public sealed class ImportServiceErrorTests
         using var temp = new TempDirectory();
         var path = temp.WriteFile("model.ifc", "hello, I am not a building");
 
-        var result = await _service.RunAsync(path, _noProgress, CancellationToken.None);
+        var result = await _service.RunAsync(path, Output, _noProgress, CancellationToken.None);
 
         AssertFailure(result, ImportError.NotIfc);
     }
@@ -49,7 +71,7 @@ public sealed class ImportServiceErrorTests
         using var temp = new TempDirectory();
         var path = temp.WriteFile("empty.ifc", StepHeaderWithoutProject);
 
-        var result = await _service.RunAsync(path, _noProgress, CancellationToken.None);
+        var result = await _service.RunAsync(path, Output, _noProgress, CancellationToken.None);
 
         AssertFailure(result, ImportError.ParseFailed);
     }
@@ -61,7 +83,7 @@ public sealed class ImportServiceErrorTests
         var path = Path.Combine(temp.Path, "bom.ifc");
         File.WriteAllText(path, StepHeaderWithoutProject, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
-        var result = await _service.RunAsync(path, _noProgress, CancellationToken.None);
+        var result = await _service.RunAsync(path, Output, _noProgress, CancellationToken.None);
 
         AssertFailure(result, ImportError.ParseFailed);
     }
@@ -72,25 +94,25 @@ public sealed class ImportServiceErrorTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        var result = await _service.RunAsync(Samples.Duplex, _noProgress, cts.Token);
+        var result = await _service.RunAsync(Samples.Duplex, Output, _noProgress, cts.Token);
 
         AssertFailure(result, ImportError.Cancelled);
     }
 
-    [TestCase(ImportStep.ReadingModel)]
-    [TestCase(ImportStep.CollectingData)]
-    public async Task CancelDuringStepReturnsCancelled(ImportStep step)
+    [TestCase(10)]
+    [TestCase(90)]
+    public async Task CancelWhileReadingReturnsCancelled(int atPercent)
     {
         using var cts = new CancellationTokenSource();
         var progress = new SyncProgress<ImportProgress>(p =>
         {
-            if (p.Step == step)
+            if (p.Step == ImportStep.ReadingModel && p.Percent >= atPercent)
             {
                 cts.Cancel();
             }
         });
 
-        var result = await _service.RunAsync(Samples.Duplex, progress, cts.Token);
+        var result = await _service.RunAsync(Samples.Duplex, Output, progress, cts.Token);
 
         AssertFailure(result, ImportError.Cancelled);
     }

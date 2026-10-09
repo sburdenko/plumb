@@ -1,6 +1,8 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Plumb.App.Services;
+using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Tree;
 
@@ -14,8 +16,12 @@ public sealed partial class LoadedViewModel : ViewModelBase
     private readonly ILookup<string, PropertyRecord> _propertiesByElement;
     private readonly IReadOnlyDictionary<string, ElementRecord> _elementsById;
 
-    public LoadedViewModel(IfcModelData model, TimeSpan importDuration, IAsyncRelayCommand browseCommand)
+    private readonly IFileRevealer _revealer;
+    private readonly PackageState _package;
+
+    public LoadedViewModel(ImportResult.Success result, OpenCommands open, IFileRevealer revealer)
     {
+        var model = result.Model;
         _tree = ModelTreeBuilder.Build(model.Elements);
         _propertiesByElement = model.Properties.ToLookup(p => p.GlobalId);
         _elementsById = model.Elements.ToDictionary(e => e.GlobalId);
@@ -26,8 +32,10 @@ public sealed partial class LoadedViewModel : ViewModelBase
             "{0} · {1} elements · imported in {2:0.0} s",
             model.IfcSchema,
             model.Elements.Count,
-            importDuration.TotalSeconds);
-        BrowseCommand = browseCommand;
+            result.ImportDuration.TotalSeconds);
+        _package = result.Package;
+        Open = open;
+        _revealer = revealer;
         Nodes = ToViewModels(_tree, expandAll: false);
     }
 
@@ -35,7 +43,17 @@ public sealed partial class LoadedViewModel : ViewModelBase
 
     public string Summary { get; }
 
-    public IAsyncRelayCommand BrowseCommand { get; }
+    /// <summary>The saved package, or null when it could not be saved.</summary>
+    public string? PackagePath => (_package as PackageState.Saved)?.Path;
+
+    /// <summary>Why the package could not be saved, or null when it was.</summary>
+    public string? SaveWarning => (_package as PackageState.NotSaved)?.Reason;
+
+    public bool CanReveal => _package is PackageState.Saved;
+
+    public OpenCommands Open { get; }
+
+    public string RevealLabel => _revealer.ActionLabel;
 
     [ObservableProperty]
     public partial string? SearchText { get; set; }
@@ -48,6 +66,18 @@ public sealed partial class LoadedViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial ElementDetailsViewModel? SelectedElement { get; private set; }
+
+    [ObservableProperty]
+    public partial string? RevealError { get; private set; }
+
+    [RelayCommand(CanExecute = nameof(CanReveal))]
+    private void Reveal()
+    {
+        if (_package is PackageState.Saved saved)
+        {
+            RevealError = _revealer.TryReveal(saved.Path, out var error) ? null : error;
+        }
+    }
 
     partial void OnSearchTextChanged(string? value)
     {

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plumb.App.Services;
 using Plumb.App.ViewModels;
@@ -13,10 +14,12 @@ public sealed class MainWindowViewModelTests
 
     private static readonly ImportResult.Success Loaded = new(
         new IfcModelData("a.ifc", "IFC4", [new ElementRecord("P", "IfcProject", "Project", null, null)], []),
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1),
+        new PackageState.Saved("/models/a.plumb"));
 
     private FakeImportService _importService = null!;
     private FakeFilePicker _picker = null!;
+    private FakeRevealer _revealer = null!;
     private MainWindowViewModel _viewModel = null!;
 
     [SetUp]
@@ -24,7 +27,8 @@ public sealed class MainWindowViewModelTests
     {
         _importService = new FakeImportService();
         _picker = new FakeFilePicker();
-        _viewModel = new MainWindowViewModel(_importService, _picker, NullLogger<MainWindowViewModel>.Instance);
+        _revealer = new FakeRevealer();
+        _viewModel = new MainWindowViewModel(_importService, _picker, _revealer, NullLogger<MainWindowViewModel>.Instance);
     }
 
     [Test]
@@ -39,10 +43,32 @@ public sealed class MainWindowViewModelTests
     {
         _importService.Next = Loaded;
 
-        await _viewModel.ImportFileCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
 
         Assert.That(_viewModel.CurrentState, Is.TypeOf<LoadedViewModel>());
         Assert.That(((LoadedViewModel)_viewModel.CurrentState).FileName, Is.EqualTo("a.ifc"));
+    }
+
+    [Test]
+    public async Task IfcFileIsImportedIntoItsOwnFolder()
+    {
+        _importService.Next = Loaded;
+        var ifc = Path.Combine(Path.GetTempPath(), "models", "a.ifc");
+
+        await _viewModel.OpenPathCommand.ExecuteAsync(ifc).WaitAsync(TestTimeout);
+
+        Assert.That(_importService.Calls, Is.EqualTo(new[] { ("import", ifc, Path.GetDirectoryName(ifc)) }));
+    }
+
+    [Test]
+    public async Task PackageIsOpenedNotImported()
+    {
+        _importService.Next = Loaded;
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.plumb").WaitAsync(TestTimeout);
+
+        Assert.That(_importService.Calls, Is.EqualTo(new[] { ("open", "/models/a.plumb", (string?)null) }));
+        Assert.That(_viewModel.CurrentState, Is.TypeOf<LoadedViewModel>());
     }
 
     [Test]
@@ -50,7 +76,7 @@ public sealed class MainWindowViewModelTests
     {
         _importService.Next = new ImportResult.Failure(ImportError.NotIfc, "Not an .ifc file: a.txt");
 
-        await _viewModel.ImportFileCommand.ExecuteAsync("a.txt").WaitAsync(TestTimeout);
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.txt").WaitAsync(TestTimeout);
 
         var empty = (EmptyStateViewModel)_viewModel.CurrentState;
         Assert.That(empty.ErrorMessage, Is.EqualTo("Not an .ifc file: a.txt"));
@@ -60,7 +86,7 @@ public sealed class MainWindowViewModelTests
     public async Task CancelReturnsToPreviouslyLoadedModel()
     {
         _importService.Next = Loaded;
-        await _viewModel.ImportFileCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
         var loaded = _viewModel.CurrentState;
 
         await CancelBlockingImportAsync("b.ifc");
@@ -72,7 +98,7 @@ public sealed class MainWindowViewModelTests
     public async Task CancelAfterFailureShowsEmptyWithoutStaleError()
     {
         _importService.Next = new ImportResult.Failure(ImportError.ParseFailed, "broken");
-        await _viewModel.ImportFileCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
 
         await CancelBlockingImportAsync("b.ifc");
 
@@ -82,29 +108,42 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task CommandsAreDisabledWhileImporting()
     {
-        var import = _viewModel.ImportFileCommand.ExecuteAsync("a.ifc");
+        var import = _viewModel.OpenPathCommand.ExecuteAsync("a.ifc");
 
         Assert.That(_viewModel.CurrentState, Is.TypeOf<ImportingViewModel>());
-        Assert.That(_viewModel.ImportFileCommand.CanExecute("b.ifc"), Is.False);
-        Assert.That(_viewModel.BrowseCommand.CanExecute(null), Is.False);
+        Assert.That(_viewModel.OpenPathCommand.CanExecute("b.ifc"), Is.False);
+        Assert.That(_viewModel.OpenIfcCommand.CanExecute(null), Is.False);
+        Assert.That(_viewModel.OpenPackageCommand.CanExecute(null), Is.False);
 
         _importService.Release(Loaded);
         await import.WaitAsync(TestTimeout);
-        Assert.That(_viewModel.ImportFileCommand.CanExecute("b.ifc"), Is.True);
+        Assert.That(_viewModel.OpenPathCommand.CanExecute("b.ifc"), Is.True);
     }
 
     [Test]
     public async Task FileDroppedWhilePickerIsOpenIsImportedOnce()
     {
-        var browse = _viewModel.BrowseCommand.ExecuteAsync(null);
-        var drop = _viewModel.ImportFileCommand.ExecuteAsync("dropped.ifc");
+        var browse = _viewModel.OpenIfcCommand.ExecuteAsync(null);
+        var drop = _viewModel.OpenPathCommand.ExecuteAsync("dropped.ifc");
 
         _picker.Choose("picked.ifc");
         await browse.WaitAsync(TestTimeout);
         _importService.Release(Loaded);
         await drop.WaitAsync(TestTimeout);
 
-        Assert.That(_importService.Paths, Is.EqualTo(new[] { "dropped.ifc" }));
+        Assert.That(_importService.Calls.Select(c => c.Path), Is.EqualTo(new[] { "dropped.ifc" }));
+    }
+
+    [Test]
+    public async Task OpenPackageButtonOpensThePickedFolder()
+    {
+        _importService.Next = Loaded;
+        var browse = _viewModel.OpenPackageCommand.ExecuteAsync(null);
+
+        _picker.Choose("/models/a.plumb");
+        await browse.WaitAsync(TestTimeout);
+
+        Assert.That(_importService.Calls.Single().Method, Is.EqualTo("open"));
     }
 
     [Test]
@@ -112,7 +151,7 @@ public sealed class MainWindowViewModelTests
     {
         _picker.Fail(new InvalidOperationException("no window"));
 
-        await _viewModel.BrowseCommand.ExecuteAsync(null).WaitAsync(TestTimeout);
+        await _viewModel.OpenIfcCommand.ExecuteAsync(null).WaitAsync(TestTimeout);
 
         Assert.That(((EmptyStateViewModel)_viewModel.CurrentState).ErrorMessage, Does.Contain("no window"));
     }
@@ -120,16 +159,67 @@ public sealed class MainWindowViewModelTests
     [Test]
     public async Task PickerCancelDoesNotImport()
     {
-        var browse = _viewModel.BrowseCommand.ExecuteAsync(null);
+        var browse = _viewModel.OpenIfcCommand.ExecuteAsync(null);
         _picker.Choose(null);
         await browse.WaitAsync(TestTimeout);
 
-        Assert.That(_importService.Paths, Is.Empty);
+        Assert.That(_importService.Calls, Is.Empty);
+    }
+
+    [Test]
+    public async Task RevealShowsThePackageInTheFileManager()
+    {
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+
+        loaded.RevealCommand.Execute(null);
+
+        Assert.That(loaded.RevealLabel, Is.EqualTo("Show in Test"));
+        Assert.That(_revealer.Revealed, Is.EqualTo(new[] { "/models/a.plumb" }));
+    }
+
+    [Test]
+    public async Task UnsavedPackageShowsAWarningAndHidesReveal()
+    {
+        _importService.Next = Loaded with { Package = new PackageState.NotSaved("Could not save a.plumb: read-only") };
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        Assert.That(loaded.SaveWarning, Is.EqualTo("Could not save a.plumb: read-only"));
+        Assert.That(loaded.CanReveal, Is.False);
+        Assert.That(loaded.RevealCommand.CanExecute(null), Is.False);
+    }
+
+    [Test]
+    public async Task SavedPackageHasNoWarning()
+    {
+        _importService.Next = Loaded;
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        Assert.That(loaded.SaveWarning, Is.Null);
+        Assert.That(loaded.CanReveal, Is.True);
+    }
+
+    [Test]
+    public async Task FailedRevealShowsTheReason()
+    {
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        _revealer.Failure = "The package no longer exists.";
+
+        loaded.RevealCommand.Execute(null);
+
+        Assert.That(loaded.RevealError, Is.EqualTo("The package no longer exists."));
     }
 
     private async Task CancelBlockingImportAsync(string path)
     {
-        var import = _viewModel.ImportFileCommand.ExecuteAsync(path);
+        var import = _viewModel.OpenPathCommand.ExecuteAsync(path);
         ((ImportingViewModel)_viewModel.CurrentState).CancelCommand.Execute(null);
         await import.WaitAsync(TestTimeout);
     }
@@ -143,11 +233,28 @@ public sealed class MainWindowViewModelTests
 
         public ImportResult? Next { get; set; }
 
-        public List<string> Paths { get; } = [];
+        public List<(string Method, string Path, string? OutputDirectory)> Calls { get; } = [];
 
-        public Task<ImportResult> RunAsync(string ifcPath, IProgress<ImportProgress> progress, CancellationToken cancellationToken)
+        public Task<ImportResult> RunAsync(
+            string ifcPath,
+            string outputDirectory,
+            IProgress<ImportProgress> progress,
+            CancellationToken cancellationToken)
         {
-            Paths.Add(ifcPath);
+            Calls.Add(("import", ifcPath, outputDirectory));
+            return Load(cancellationToken);
+        }
+
+        public Task<ImportResult> OpenPackageAsync(string packagePath, IProgress<ImportProgress> progress, CancellationToken cancellationToken)
+        {
+            Calls.Add(("open", packagePath, null));
+            return Load(cancellationToken);
+        }
+
+        public void Release(ImportResult result) => _pending.ForEach(pending => pending.TrySetResult(result));
+
+        private Task<ImportResult> Load(CancellationToken cancellationToken)
+        {
             if (Next is { } next)
             {
                 Next = null;
@@ -160,8 +267,6 @@ public sealed class MainWindowViewModelTests
             _pending.Add(pending);
             return pending.Task;
         }
-
-        public void Release(ImportResult result) => _pending.ForEach(pending => pending.TrySetResult(result));
     }
 
     private sealed class FakeFilePicker : IFilePickerService
@@ -170,8 +275,26 @@ public sealed class MainWindowViewModelTests
 
         public Task<string?> PickIfcFileAsync() => _choice.Task;
 
+        public Task<string?> PickPackageAsync() => _choice.Task;
+
         public void Choose(string? path) => _choice.SetResult(path);
 
         public void Fail(Exception error) => _choice.SetException(error);
+    }
+
+    private sealed class FakeRevealer : IFileRevealer
+    {
+        public string ActionLabel => "Show in Test";
+
+        public List<string> Revealed { get; } = [];
+
+        public string? Failure { get; set; }
+
+        public bool TryReveal(string path, [NotNullWhen(false)] out string? error)
+        {
+            Revealed.Add(path);
+            error = Failure;
+            return error == null;
+        }
     }
 }

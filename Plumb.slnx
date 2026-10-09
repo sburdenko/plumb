@@ -2,7 +2,9 @@
   <Folder Name="/src/">
     <Project Path="src/Plumb.App/Plumb.App.csproj" />
     <Project Path="src/Plumb.Core/Plumb.Core.csproj" />
+    <Project Path="src/Plumb.Ifc/Plumb.Ifc.csproj" />
     <Project Path="src/Plumb.Import/Plumb.Import.csproj" />
+    <Project Path="src/Plumb.Package/Plumb.Package.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Plumb.Tests/Plumb.Tests.csproj" />

@@ -1,5 +1,5 @@
 using Plumb.Core.Model;
-using Plumb.Import.Xbim;
+using Plumb.Ifc;
 using Xbim.Ifc4;
 using Xbim.Ifc4.Kernel;
 using Xbim.Ifc4.MeasureResource;

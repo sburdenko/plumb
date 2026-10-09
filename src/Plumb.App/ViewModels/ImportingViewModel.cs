@@ -54,7 +54,9 @@ public sealed partial class ImportingViewModel : ViewModelBase
     {
         ImportStep.Validating => "Checking file…",
         ImportStep.ReadingModel => "Reading IFC…",
-        ImportStep.CollectingData => "Collecting elements and properties…",
+        ImportStep.WritingPackage => "Saving package…",
+        ImportStep.Finalizing => "Finishing…",
+        ImportStep.OpeningPackage => "Opening package…",
         _ => throw new ArgumentOutOfRangeException(nameof(step), step, "Unknown import step."),
     };
 }

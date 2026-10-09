@@ -8,7 +8,7 @@ using Plumb.App.Services;
 using Plumb.App.ViewModels;
 using Plumb.App.Views;
 using Plumb.Import;
-using Plumb.Import.Xbim;
+using Plumb.Ifc;
 
 namespace Plumb.App;
 
@@ -30,6 +30,7 @@ public sealed partial class App : Application
             var viewModel = new MainWindowViewModel(
                 new ImportService(loggerFactory.CreateLogger<ImportService>()),
                 new StorageFilePickerService(window),
+                new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
                 loggerFactory.CreateLogger<MainWindowViewModel>());
             window.DataContext = viewModel;
 
@@ -39,7 +40,7 @@ public sealed partial class App : Application
 
             if (desktop.Args is [var initialFile, ..])
             {
-                Dispatcher.UIThread.Post(() => viewModel.ImportFileCommand.Execute(initialFile));
+                Dispatcher.UIThread.Post(() => viewModel.OpenPathCommand.Execute(initialFile));
             }
         }
 
