@@ -21,6 +21,7 @@ public sealed class MainWindowViewModelTests
     private FakeImportService _importService = null!;
     private FakeFilePicker _picker = null!;
     private FakeRevealer _revealer = null!;
+    private FakeViewerLauncher _viewer = null!;
     private MainWindowViewModel _viewModel = null!;
 
     [SetUp]
@@ -29,7 +30,8 @@ public sealed class MainWindowViewModelTests
         _importService = new FakeImportService();
         _picker = new FakeFilePicker();
         _revealer = new FakeRevealer();
-        _viewModel = new MainWindowViewModel(_importService, _picker, _revealer, NullLogger<MainWindowViewModel>.Instance);
+        _viewer = new FakeViewerLauncher();
+        _viewModel = new MainWindowViewModel(_importService, _picker, _revealer, _viewer, NullLogger<MainWindowViewModel>.Instance);
     }
 
     [Test]
@@ -228,7 +230,54 @@ public sealed class MainWindowViewModelTests
 
         loaded.RevealCommand.Execute(null);
 
-        Assert.That(loaded.RevealError, Is.EqualTo("The package no longer exists."));
+        Assert.That(loaded.ActionError, Is.EqualTo("The package no longer exists."));
+    }
+
+    [Test]
+    public async Task OpenIn3DStartsTheViewerWithThePackage()
+    {
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+
+        loaded.OpenIn3DCommand.Execute(null);
+
+        Assert.That(_viewer.Opened, Is.EqualTo(new[] { "/models/a.plumb" }));
+        Assert.That(loaded.ActionError, Is.Null);
+    }
+
+    [Test]
+    public async Task OpenIn3DIsUnavailableWithoutGeometry()
+    {
+        var geometry = new GeometryState.NotBuilt(GeometryError.ConverterFailed, "exit code 1");
+        _importService.Next = Loaded with { Package = new PackageState.Saved("/models/a.plumb", geometry) };
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        Assert.That(loaded.CanOpenIn3D, Is.False);
+        Assert.That(loaded.OpenIn3DCommand.CanExecute(null), Is.False);
+    }
+
+    [Test]
+    public async Task OpenIn3DIsUnavailableWhenThePackageWasNotSaved()
+    {
+        _importService.Next = Loaded with { Package = new PackageState.NotSaved("read-only") };
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        Assert.That(((LoadedViewModel)_viewModel.CurrentState).CanOpenIn3D, Is.False);
+    }
+
+    [Test]
+    public async Task MissingViewerShowsTheReason()
+    {
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        _viewer.Failure = "The 3D viewer was not found.";
+
+        loaded.OpenIn3DCommand.Execute(null);
+
+        Assert.That(loaded.ActionError, Is.EqualTo("The 3D viewer was not found."));
     }
 
     private async Task CancelBlockingImportAsync(string path)
@@ -294,6 +343,20 @@ public sealed class MainWindowViewModelTests
         public void Choose(string? path) => _choice.SetResult(path);
 
         public void Fail(Exception error) => _choice.SetException(error);
+    }
+
+    private sealed class FakeViewerLauncher : IViewerLauncher
+    {
+        public List<string> Opened { get; } = [];
+
+        public string? Failure { get; set; }
+
+        public bool TryOpen(string packagePath, [NotNullWhen(false)] out string? error)
+        {
+            Opened.Add(packagePath);
+            error = Failure;
+            return error == null;
+        }
     }
 
     private sealed class FakeRevealer : IFileRevealer

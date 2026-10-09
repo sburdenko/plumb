@@ -1,0 +1,9 @@
+<Project>
+  <!-- Copies the Unity viewer from viewer-build/ (made by tools/build-viewer.sh) next to the app. -->
+  <PropertyGroup>
+    <ViewerBuildSource>$(MSBuildThisFileDirectory)../viewer-build/</ViewerBuildSource>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(ViewerBuildSource)')">
+    <None Include="$(ViewerBuildSource)**" LinkBase="viewer-build" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+</Project>

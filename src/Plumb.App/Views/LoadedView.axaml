@@ -16,11 +16,15 @@
                                IsVisible="{Binding Warning, Converter={x:Static ObjectConverters.IsNotNull}}"
                                Foreground="{DynamicResource PlumbWarningBrush}"
                                TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding RevealError}"
-                               IsVisible="{Binding RevealError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    <TextBlock Text="{Binding ActionError}"
+                               IsVisible="{Binding ActionError, Converter={x:Static ObjectConverters.IsNotNull}}"
                                Foreground="{DynamicResource PlumbErrorBrush}" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="Open in 3D"
+                            Command="{Binding OpenIn3DCommand}"
+                            IsVisible="{Binding CanOpenIn3D}"
+                            Classes="accent" />
                     <Button Content="{Binding RevealLabel}"
                             Command="{Binding RevealCommand}"
                             IsVisible="{Binding CanReveal}"

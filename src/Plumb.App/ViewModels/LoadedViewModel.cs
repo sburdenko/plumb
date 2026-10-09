@@ -18,9 +18,10 @@ public sealed partial class LoadedViewModel : ViewModelBase
     private readonly IReadOnlyDictionary<string, ElementRecord> _elementsById;
 
     private readonly IFileRevealer _revealer;
+    private readonly IViewerLauncher _viewer;
     private readonly PackageState _package;
 
-    public LoadedViewModel(ImportResult.Success result, OpenCommands open, IFileRevealer revealer)
+    public LoadedViewModel(ImportResult.Success result, OpenCommands open, IFileRevealer revealer, IViewerLauncher viewer)
     {
         var model = result.Model;
         _tree = ModelTreeBuilder.Build(model.Elements);
@@ -37,6 +38,7 @@ public sealed partial class LoadedViewModel : ViewModelBase
         _package = result.Package;
         Open = open;
         _revealer = revealer;
+        _viewer = viewer;
         Nodes = ToViewModels(_tree, expandAll: false);
     }
 
@@ -57,6 +59,8 @@ public sealed partial class LoadedViewModel : ViewModelBase
 
     public bool CanReveal => _package is PackageState.Saved;
 
+    public bool CanOpenIn3D => _package is PackageState.Saved { Geometry: GeometryState.Built };
+
     public OpenCommands Open { get; }
 
     public string RevealLabel => _revealer.ActionLabel;
@@ -74,14 +78,23 @@ public sealed partial class LoadedViewModel : ViewModelBase
     public partial ElementDetailsViewModel? SelectedElement { get; private set; }
 
     [ObservableProperty]
-    public partial string? RevealError { get; private set; }
+    public partial string? ActionError { get; private set; }
+
+    [RelayCommand(CanExecute = nameof(CanOpenIn3D))]
+    private void OpenIn3D()
+    {
+        if (_package is PackageState.Saved saved)
+        {
+            ActionError = _viewer.TryOpen(saved.Path, out var error) ? null : error;
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanReveal))]
     private void Reveal()
     {
         if (_package is PackageState.Saved saved)
         {
-            RevealError = _revealer.TryReveal(saved.Path, out var error) ? null : error;
+            ActionError = _revealer.TryReveal(saved.Path, out var error) ? null : error;
         }
     }
 
