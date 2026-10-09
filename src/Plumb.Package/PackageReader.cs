@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
+using Plumb.Core.Geometry;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
 
@@ -20,7 +21,19 @@ public static class PackageReader
         var (elements, properties) = ReadDatabase(Path.Combine(directory, PackageLayout.DatabaseFile), cancellationToken);
 
         var model = new IfcModelData(manifest.SourceFile, manifest.IfcSchema, elements, properties);
-        return new PackageContents(model, manifest);
+        return new PackageContents(model, manifest, GeometryOf(directory, manifest));
+    }
+
+    private static GeometryState GeometryOf(string directory, PackageManifest manifest)
+    {
+        if (manifest.GeometryError is { } error)
+        {
+            return new GeometryState.NotBuilt(error, manifest.GeometryMessage ?? string.Empty);
+        }
+
+        return File.Exists(Path.Combine(directory, PackageLayout.GeometryFile))
+            ? new GeometryState.Built()
+            : new GeometryState.NotBuilt(GeometryError.FileMissing, "3D geometry was not built: the package has no model.glb.");
     }
 
     private static PackageManifest ReadManifest(string path)

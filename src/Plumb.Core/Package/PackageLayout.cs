@@ -12,6 +12,7 @@ namespace Plumb.Core.Package
         public const string ManifestFile = "manifest.json";
         public const string DatabaseFile = "model.sqlite";
         public const string ElementIndexFile = "elements.json";
+        public const string GeometryFile = "model.glb";
         public const int FormatVersion = 1;
 
         public static bool IsPackagePath(string path) =>

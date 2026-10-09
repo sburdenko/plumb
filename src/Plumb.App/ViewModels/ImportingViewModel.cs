@@ -54,6 +54,7 @@ public sealed partial class ImportingViewModel : ViewModelBase
     {
         ImportStep.Validating => "Checking file…",
         ImportStep.ReadingModel => "Reading IFC…",
+        ImportStep.ConvertingGeometry => "Building 3D geometry…",
         ImportStep.WritingPackage => "Saving package…",
         ImportStep.Finalizing => "Finishing…",
         ImportStep.OpeningPackage => "Opening package…",

@@ -4,6 +4,7 @@ namespace Plumb.Core.Import
     {
         Validating,
         ReadingModel,
+        ConvertingGeometry,
         WritingPackage,
         Finalizing,
         OpeningPackage,

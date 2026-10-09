@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
+using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Package;
 using Plumb.Import;
@@ -14,7 +15,7 @@ namespace Plumb.Tests;
 [TestFixture]
 public sealed class ImportServicePackageTests
 {
-    private readonly ImportService _service = new(NullLogger<ImportService>.Instance);
+    private readonly ImportService _service = new(NullLogger<ImportService>.Instance, FakeGeometryConverter.Builds());
     private readonly IProgress<ImportProgress> _noProgress = new SyncProgress<ImportProgress>(_ => { });
 
     private TempDirectory _temp = null!;
@@ -38,9 +39,11 @@ public sealed class ImportServicePackageTests
     {
         var result = await ImportAsync();
 
-        Assert.That(result.Package, Is.EqualTo(new PackageState.Saved(_package)));
-        Assert.That(Directory.GetFiles(_package).Select(Path.GetFileName),
-            Is.EquivalentTo(new[] { PackageLayout.ManifestFile, PackageLayout.DatabaseFile, PackageLayout.ElementIndexFile }));
+        Assert.That(result.Package, Is.EqualTo(new PackageState.Saved(_package, new GeometryState.Built())));
+        Assert.That(Directory.GetFiles(_package).Select(Path.GetFileName), Is.EquivalentTo(new[]
+        {
+            PackageLayout.ManifestFile, PackageLayout.DatabaseFile, PackageLayout.ElementIndexFile, PackageLayout.GeometryFile,
+        }));
     }
 
     [Test]
@@ -93,7 +96,7 @@ public sealed class ImportServicePackageTests
         Assert.That(success.Model.Elements, Is.EqualTo(imported.Model.Elements));
         Assert.That(success.Model.Properties, Is.EqualTo(imported.Model.Properties));
         Assert.That(success.ImportDuration, Is.EqualTo(imported.ImportDuration));
-        Assert.That(success.Package, Is.EqualTo(new PackageState.Saved(_package)));
+        Assert.That(success.Package, Is.EqualTo(new PackageState.Saved(_package, new GeometryState.Built())));
     }
 
     [Test]
@@ -156,7 +159,7 @@ public sealed class ImportServicePackageTests
 
         Assert.That(reports.Select(r => r.Step).Distinct(), Is.EqualTo(new[]
         {
-            ImportStep.Validating, ImportStep.ReadingModel, ImportStep.WritingPackage, ImportStep.Finalizing,
+            ImportStep.Validating, ImportStep.ReadingModel, ImportStep.ConvertingGeometry, ImportStep.WritingPackage, ImportStep.Finalizing,
         }));
         Assert.That(reports.Select(r => r.Percent), Is.Ordered);
         Assert.That(reports[^1].Percent, Is.EqualTo(100));
@@ -199,6 +202,21 @@ public sealed class ImportServicePackageTests
         {
             File.SetUnixFileMode(folder, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
+    }
+
+    [Test]
+    public async Task FailedGeometryStillSavesThePackageAndRemembersWhy()
+    {
+        const string reason = "3D geometry was not built: IfcConvert failed (exit code 1).";
+        var service = new ImportService(NullLogger<ImportService>.Instance, FakeGeometryConverter.Fails(GeometryError.ConverterFailed, reason));
+
+        var imported = (ImportResult.Success)await service.RunAsync(_ifc, _temp.Path, _noProgress, CancellationToken.None);
+        var opened = (ImportResult.Success)await service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);
+
+        var expected = new PackageState.Saved(_package, new GeometryState.NotBuilt(GeometryError.ConverterFailed, reason));
+        Assert.That(imported.Package, Is.EqualTo(expected));
+        Assert.That(opened.Package, Is.EqualTo(expected));
+        Assert.That(File.Exists(Path.Combine(_package, PackageLayout.GeometryFile)), Is.False);
     }
 
     [Test]

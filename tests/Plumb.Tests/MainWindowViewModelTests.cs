@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging.Abstractions;
 using Plumb.App.Services;
 using Plumb.App.ViewModels;
+using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
 
@@ -15,7 +16,7 @@ public sealed class MainWindowViewModelTests
     private static readonly ImportResult.Success Loaded = new(
         new IfcModelData("a.ifc", "IFC4", [new ElementRecord("P", "IfcProject", "Project", null, null)], []),
         TimeSpan.FromSeconds(1),
-        new PackageState.Saved("/models/a.plumb"));
+        new PackageState.Saved("/models/a.plumb", new GeometryState.Built()));
 
     private FakeImportService _importService = null!;
     private FakeFilePicker _picker = null!;

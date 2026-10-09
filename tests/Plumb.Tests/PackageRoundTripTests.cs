@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
+using Plumb.Core.Geometry;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
 using Plumb.Package;
@@ -134,6 +135,24 @@ public sealed class PackageRoundTripTests
         }
 
         Assert.That(names, Is.EquivalentTo(new[] { "elements", "properties", "ix_properties_global_id" }));
+    }
+
+    [Test]
+    public void PackageWithoutGeometryFileReportsItMissing()
+    {
+        var contents = PackageReader.Read(_package, CancellationToken.None);
+
+        Assert.That(((GeometryState.NotBuilt)contents.Geometry).Error, Is.EqualTo(GeometryError.FileMissing));
+    }
+
+    [Test]
+    public void PackageWithGeometryFileReportsItBuilt()
+    {
+        File.WriteAllText(Path.Combine(_package, PackageLayout.GeometryFile), "glTF");
+
+        var contents = PackageReader.Read(_package, CancellationToken.None);
+
+        Assert.That(contents.Geometry, Is.TypeOf<GeometryState.Built>());
     }
 
     [Test]
