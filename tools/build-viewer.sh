@@ -27,4 +27,10 @@ if ! "$editor" -batchmode -quit -projectPath "$PWD/viewer" \
     exit 1
 fi
 rm -f "$log"
+
+# Unity rewrites the files inside an existing bundle without changing the bundle's own date, so macOS
+# would keep showing the icon it cached for the previous build.
+if [[ "$method" == "BuildMacOS" ]]; then
+    touch viewer-build/*.app
+fi
 echo "Viewer ready in viewer-build/"
