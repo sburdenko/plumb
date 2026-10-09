@@ -2,6 +2,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Plumb.App.Services;
+using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Tree;
@@ -46,8 +47,13 @@ public sealed partial class LoadedViewModel : ViewModelBase
     /// <summary>The saved package, or null when it could not be saved.</summary>
     public string? PackagePath => (_package as PackageState.Saved)?.Path;
 
-    /// <summary>Why the package could not be saved, or null when it was.</summary>
-    public string? SaveWarning => (_package as PackageState.NotSaved)?.Reason;
+    /// <summary>What is missing from this model (the saved package or its 3D geometry), or null when nothing is.</summary>
+    public string? Warning => _package switch
+    {
+        PackageState.NotSaved notSaved => notSaved.Reason,
+        PackageState.Saved { Geometry: GeometryState.NotBuilt notBuilt } => notBuilt.Reason,
+        _ => null,
+    };
 
     public bool CanReveal => _package is PackageState.Saved;
 
