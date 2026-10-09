@@ -17,7 +17,6 @@ namespace Plumb.Viewer
         private const int FramesBeforeScreenshot = 5;
         private const int FramesBeforeQuit = 5;
         private const double ColliderBudgetMilliseconds = 5;
-        private const string Help = "Left drag: rotate    Shift or middle drag: pan    Wheel: zoom    Click: select    F: frame";
 
         private readonly ClickGesture _click = new ClickGesture();
         private readonly SelectionHighlight _highlight = new SelectionHighlight();
@@ -31,6 +30,7 @@ namespace Plumb.Viewer
         private GltfImport _import;
         private Task<bool> _pending;
         private Transform _model;
+        private string _packageName;
         private ColliderBuilder _colliders;
         private ElementInfo _selected;
         private int _screenshotCountdown = -1;
@@ -63,6 +63,7 @@ namespace Plumb.Viewer
             }
 
             var package = _arguments.PackagePath;
+            _packageName = Path.GetFileName(package.TrimEnd('/', '\\'));
             var geometry = Path.Combine(package, GeometryFile);
             if (!Directory.Exists(package))
             {
@@ -90,7 +91,7 @@ namespace Plumb.Viewer
             var settings = new ImportSettings { NodeNameMethod = NameImportMethod.Original };
             _pending = _import.LoadFile(geometry, null, settings);
             _state = ViewerState.LoadingModel;
-            _message = $"Loading {Path.GetFileName(package.TrimEnd('/', '\\'))}…";
+            _message = $"Opening {_packageName}…";
         }
 
         private void Update()
@@ -274,7 +275,11 @@ namespace Plumb.Viewer
             }
         }
 
-        private bool IsPointerOverUi(Vector2 pointer) => _selected != null && ElementPanel.Contains(pointer, Screen.height);
+        /// <param name="pointer">A position from <c>Input.mousePosition</c>, whose origin is bottom left.</param>
+        private bool IsPointerOverUi(Vector2 pointer) =>
+            pointer.y > Screen.height - ViewerChrome.TopBarHeight
+            || pointer.y < ViewerChrome.StatusBarHeight
+            || (_selected != null && ElementPanel.Contains(pointer, Screen.height));
 
         private void AdvanceScreenshot()
         {
@@ -293,21 +298,32 @@ namespace Plumb.Viewer
 
         private void OnGUI()
         {
-            if (!string.IsNullOrEmpty(_message))
-            {
-                GUI.Box(new Rect(16, 16, Mathf.Min(640, Screen.width - 32), 32), _message, ViewerStyles.Message);
-            }
+            ViewerChrome.DrawTopBar(_packageName);
 
-            if (_state == ViewerState.Ready)
+            switch (_state)
             {
-                GUI.Label(new Rect(16, Screen.height - 30, Screen.width - 32, 24), Help, ViewerStyles.Hint);
+                case ViewerState.NoPackage:
+                    ViewerChrome.DrawNotice("NO PACKAGE", _message);
+                    break;
+                case ViewerState.Failed:
+                    ViewerChrome.DrawNotice("CANNOT OPEN", _message);
+                    break;
+                case ViewerState.LoadingModel:
+                case ViewerState.BuildingScene:
+                    ViewerChrome.DrawNotice("LOADING", _message);
+                    break;
             }
 
             if (_selected != null)
             {
                 ElementPanel.Draw(_selected);
             }
+
+            ViewerChrome.DrawStatusBar(StatusText);
         }
+
+        /// <summary>Notices carry the message in every other state, so the status bar does not repeat it.</summary>
+        private string StatusText => _state == ViewerState.Ready ? _message ?? ViewerChrome.HelpText : string.Empty;
 
         private void OnDestroy()
         {

@@ -9,8 +9,8 @@ namespace Plumb.Viewer
     {
         private static readonly int BaseColor = Shader.PropertyToID("baseColorFactor");
         private static readonly int Emissive = Shader.PropertyToID("emissiveFactor");
-        private static readonly Color Tint = new Color(1f, 0.72f, 0.18f, 1f);
-        private static readonly Color Glow = new Color(0.35f, 0.2f, 0f, 1f);
+        private static readonly Color Tint = Graphite.Accent;
+        private static readonly Color Glow = new Color(0.3f, 0.04f, 0f, 1f);
 
         private readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
         private Renderer[] _renderers = new Renderer[0];
