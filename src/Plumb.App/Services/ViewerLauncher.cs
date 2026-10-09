@@ -18,6 +18,12 @@ public sealed class ViewerLauncher(ILogger<ViewerLauncher> logger) : IViewerLaun
 
     public bool TryOpen(string packagePath, [NotNullWhen(false)] out string? error)
     {
+        if (!Directory.Exists(packagePath))
+        {
+            error = $"{Path.GetFileName(Path.TrimEndingDirectorySeparator(packagePath))} no longer exists.";
+            return false;
+        }
+
         var location = Environment.GetEnvironmentVariable(LocationVariable) is { Length: > 0 } configured ? configured : DefaultLocation;
         var executable = FindExecutable(location);
         if (executable == null)
@@ -65,7 +71,9 @@ public sealed class ViewerLauncher(ILogger<ViewerLauncher> logger) : IViewerLaun
             return binaries != null && Directory.Exists(binaries) ? Directory.EnumerateFiles(binaries).FirstOrDefault() : null;
         }
 
+        // Unity names the player PlumbViewer.exe on Windows and PlumbViewer.x86_64 on Linux.
+        var playerExtension = OperatingSystem.IsWindows() ? ".exe" : ".x86_64";
         return Directory.EnumerateFiles(location, "PlumbViewer*", SearchOption.AllDirectories)
-            .FirstOrDefault(path => OperatingSystem.IsWindows() ? path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) : !Path.HasExtension(path));
+            .FirstOrDefault(path => path.EndsWith(playerExtension, StringComparison.OrdinalIgnoreCase));
     }
 }

@@ -1,9 +1,20 @@
 <Project>
-  <!-- Copies the Unity viewer from viewer-build/ (made by tools/build-viewer.sh) next to the app. -->
+  <!--
+    Copies the Unity viewer from viewer-build/ (made by tools/build-viewer.sh) next to the app.
+    A target rather than CopyToOutputDirectory items, so projects referencing the app (the tests)
+    do not get their own 68 MB copy. Unity's *DoNotShip* debug-symbol folders are left behind.
+  -->
   <PropertyGroup>
     <ViewerBuildSource>$(MSBuildThisFileDirectory)../viewer-build/</ViewerBuildSource>
   </PropertyGroup>
-  <ItemGroup Condition="Exists('$(ViewerBuildSource)')">
-    <None Include="$(ViewerBuildSource)**" LinkBase="viewer-build" CopyToOutputDirectory="PreserveNewest" Visible="false" />
-  </ItemGroup>
+
+  <Target Name="CopyViewerBuild" AfterTargets="Build" Condition="Exists('$(ViewerBuildSource)')">
+    <ItemGroup>
+      <ViewerBuildFile Include="$(ViewerBuildSource)**"
+                       Exclude="$(ViewerBuildSource)*DoNotShip*/**;$(ViewerBuildSource)*DontShipItWithYourGame*/**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ViewerBuildFile)"
+          DestinationFiles="@(ViewerBuildFile->'$(OutDir)viewer-build/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

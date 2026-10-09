@@ -41,6 +41,26 @@ public sealed class ViewerLauncherTests
     }
 
     [Test]
+    [Platform(Include = "Linux")]
+    public void FindsTheLinuxPlayer()
+    {
+        var player = _temp.WriteFile("PlumbViewer.x86_64", "binary");
+
+        Assert.That(ViewerLauncher.FindExecutable(_temp.Path), Is.EqualTo(player));
+    }
+
+    [Test]
+    public void MissingPackageIsReportedBeforeStartingTheViewer()
+    {
+        var launcher = new ViewerLauncher(Microsoft.Extensions.Logging.Abstractions.NullLogger<ViewerLauncher>.Instance);
+
+        var opened = launcher.TryOpen(Path.Combine(_temp.Path, "Gone.plumb"), out var error);
+
+        Assert.That(opened, Is.False);
+        Assert.That(error, Is.EqualTo("Gone.plumb no longer exists."));
+    }
+
+    [Test]
     [Platform(Include = "Win")]
     public void FindsTheWindowsExecutable()
     {
