@@ -36,6 +36,8 @@ public sealed class PackageRoundTripTests
         6,
         4210);
 
+    private static readonly IProgress<int> NoProgress = new SyncProgress<int>(_ => { });
+
     private TempDirectory _temp = null!;
     private string _package = null!;
 
@@ -44,7 +46,7 @@ public sealed class PackageRoundTripTests
     {
         _temp = new TempDirectory();
         _package = Path.Combine(_temp.Path, "House.plumb");
-        PackageWriter.Write(_package, Model, Manifest, CancellationToken.None);
+        PackageWriter.Write(_package, Model, Manifest, NoProgress, CancellationToken.None);
     }
 
     [TearDown]
@@ -141,7 +143,7 @@ public sealed class PackageRoundTripTests
         cts.Cancel();
 
         Assert.That(
-            () => PackageWriter.Write(Path.Combine(_temp.Path, "Other.plumb"), Model, Manifest, cts.Token),
+            () => PackageWriter.Write(Path.Combine(_temp.Path, "Other.plumb"), Model, Manifest, NoProgress, cts.Token),
             Throws.InstanceOf<OperationCanceledException>());
     }
 }

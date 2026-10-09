@@ -14,7 +14,10 @@ namespace Plumb.Core.Import
         /// <summary>The import was cancelled by the caller.</summary>
         Cancelled,
 
-        /// <summary>The file exists but could not be read (permissions, locks, disk errors).</summary>
+        /// <summary>A file or folder could not be read or written (permissions, locks, disk errors).</summary>
         IoError,
+
+        /// <summary>The folder is not a <c>.plumb</c> package this version can open.</summary>
+        PackageInvalid,
     }
 }

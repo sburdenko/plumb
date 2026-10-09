@@ -70,7 +70,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var result = await _importService.RunAsync(path, new Progress<ImportProgress>(importing.Report), cancellation.Token);
+            var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
+            var result = await _importService.RunAsync(path, outputDirectory, new Progress<ImportProgress>(importing.Report), cancellation.Token);
             CurrentState = NextState(result, previous);
         }
         catch (Exception ex)
@@ -82,7 +83,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private ViewModelBase NextState(ImportResult result, ViewModelBase previous) => result switch
     {
-        ImportResult.Success success => new LoadedViewModel(success.Model, success.Duration, BrowseCommand),
+        ImportResult.Success success => new LoadedViewModel(success.Model, success.ImportDuration, BrowseCommand),
         ImportResult.Failure { Error: ImportError.Cancelled } => previous is LoadedViewModel
             ? previous
             : new EmptyStateViewModel(BrowseCommand, errorMessage: null),

@@ -13,6 +13,8 @@ public sealed class PackageReaderErrorTests
     private static readonly PackageManifest Manifest = new(
         PackageLayout.FormatVersion, "House.ifc", "ab12", "IFC4", DateTime.UtcNow, 1, 10);
 
+    private static readonly IProgress<int> NoProgress = new SyncProgress<int>(_ => { });
+
     private TempDirectory _temp = null!;
     private string _package = null!;
 
@@ -21,7 +23,7 @@ public sealed class PackageReaderErrorTests
     {
         _temp = new TempDirectory();
         _package = Path.Combine(_temp.Path, "House.plumb");
-        PackageWriter.Write(_package, Model, Manifest, CancellationToken.None);
+        PackageWriter.Write(_package, Model, Manifest, NoProgress, CancellationToken.None);
     }
 
     [TearDown]

@@ -29,14 +29,16 @@ internal static class PackageDatabase
         CREATE INDEX ix_properties_global_id ON properties(global_id);
         """;
 
-    public static void Write(string path, IfcModelData model, CancellationToken cancellationToken)
+    /// <param name="progress">Receives 0..100 as rows are written.</param>
+    public static void Write(string path, IfcModelData model, IProgress<int> progress, CancellationToken cancellationToken)
     {
         using var connection = Open(path, SqliteOpenMode.ReadWriteCreate);
         using var transaction = connection.BeginTransaction();
+        var rows = new RowProgress(model.Elements.Count + model.Properties.Count, progress, cancellationToken);
 
         Execute(connection, transaction, Schema);
-        InsertElements(connection, transaction, model.Elements, cancellationToken);
-        InsertProperties(connection, transaction, model.Properties, cancellationToken);
+        InsertElements(connection, transaction, model.Elements, rows);
+        InsertProperties(connection, transaction, model.Properties, rows);
 
         transaction.Commit();
     }
@@ -81,7 +83,7 @@ internal static class PackageDatabase
         SqliteConnection connection,
         SqliteTransaction transaction,
         IReadOnlyList<ElementRecord> elements,
-        CancellationToken cancellationToken)
+        RowProgress rows)
     {
         using var insert = connection.CreateCommand();
         insert.Transaction = transaction;
@@ -97,7 +99,7 @@ internal static class PackageDatabase
 
         foreach (var element in elements)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            rows.Next();
             id.Value = element.GlobalId;
             type.Value = element.IfcType;
             name.Value = OrNull(element.Name);
@@ -111,7 +113,7 @@ internal static class PackageDatabase
         SqliteConnection connection,
         SqliteTransaction transaction,
         IReadOnlyList<PropertyRecord> properties,
-        CancellationToken cancellationToken)
+        RowProgress rows)
     {
         using var insert = connection.CreateCommand();
         insert.Transaction = transaction;
@@ -127,7 +129,7 @@ internal static class PackageDatabase
 
         foreach (var property in properties)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            rows.Next();
             id.Value = property.GlobalId;
             pset.Value = property.Pset;
             name.Value = property.Name;
@@ -163,6 +165,28 @@ internal static class PackageDatabase
         command.Transaction = transaction;
         command.CommandText = sql;
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Counts written rows, reports each new whole percent and checks for cancellation before every row.
+    /// </summary>
+    private sealed class RowProgress(int total, IProgress<int> progress, CancellationToken cancellationToken)
+    {
+        private int _written;
+        private int _lastPercent = -1;
+
+        public void Next()
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var percent = total == 0 ? 100 : _written * 100 / total;
+            if (percent != _lastPercent)
+            {
+                _lastPercent = percent;
+                progress.Report(percent);
+            }
+
+            _written++;
+        }
     }
 
     private static object OrNull(string? value) => value ?? (object)DBNull.Value;

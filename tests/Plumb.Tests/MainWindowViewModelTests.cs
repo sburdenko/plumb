@@ -13,7 +13,8 @@ public sealed class MainWindowViewModelTests
 
     private static readonly ImportResult.Success Loaded = new(
         new IfcModelData("a.ifc", "IFC4", [new ElementRecord("P", "IfcProject", "Project", null, null)], []),
-        TimeSpan.FromSeconds(1));
+        TimeSpan.FromSeconds(1),
+        "/models/a.plumb");
 
     private FakeImportService _importService = null!;
     private FakeFilePicker _picker = null!;
@@ -145,9 +146,19 @@ public sealed class MainWindowViewModelTests
 
         public List<string> Paths { get; } = [];
 
-        public Task<ImportResult> RunAsync(string ifcPath, IProgress<ImportProgress> progress, CancellationToken cancellationToken)
+        public Task<ImportResult> RunAsync(
+            string ifcPath,
+            string outputDirectory,
+            IProgress<ImportProgress> progress,
+            CancellationToken cancellationToken) =>
+            Load(ifcPath, cancellationToken);
+
+        public Task<ImportResult> OpenPackageAsync(string packagePath, IProgress<ImportProgress> progress, CancellationToken cancellationToken) =>
+            Load(packagePath, cancellationToken);
+
+        private Task<ImportResult> Load(string path, CancellationToken cancellationToken)
         {
-            Paths.Add(ifcPath);
+            Paths.Add(path);
             if (Next is { } next)
             {
                 Next = null;
