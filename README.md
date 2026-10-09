@@ -154,7 +154,7 @@ dotnet run --project src/Plumb.App
 
 `fetch-ifcconvert.sh` downloads the pinned IfcConvert build for your OS and checks its SHA-256; the build copies it next to the app. Without it the app still runs and shows that 3D geometry was not built.
 
-To use Open in 3D, build the viewer once. This needs Unity 6000.6.4f1 with macOS build support, installed through Unity Hub:
+To use Open in 3D, build the viewer once. This needs Unity 6000.6.5f1 with macOS build support, installed through Unity Hub:
 
 ```bash
 tools/build-viewer.sh
@@ -167,6 +167,14 @@ To open a file or package on start, pass its path:
 ```bash
 dotnet run --project src/Plumb.App -- path/to/model.ifc
 ```
+
+To get a standalone `Plumb.app` with its icon, IfcConvert and the viewer inside (Apple Silicon):
+
+```bash
+tools/bundle-macos.sh
+```
+
+It lands in `dist/` and runs without the .NET SDK installed.
 
 ## Tests
 
