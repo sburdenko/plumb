@@ -1,0 +1,58 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Plumb.App.Controls">
+
+  <!-- A recent model row: ruled underneath, highlighted on hover; pin and remove appear on hover or focus. -->
+  <Style Selector="Border.recent">
+    <Setter Property="BorderBrush" Value="{StaticResource Plumb.RuleBrush}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.recent:pointerover">
+    <Setter Property="Background" Value="{StaticResource Plumb.RowHoverBrush}" />
+  </Style>
+
+  <Style Selector="Button.recent-open">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.recent-open:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.recent-open:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.recent-open:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.recent-open:disabled">
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Border.recent TextBlock.recent-title">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextTreeBrush}" />
+  </Style>
+  <Style Selector="Border.recent.missing TextBlock.recent-title">
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+  </Style>
+
+  <Style Selector="Button.row-action">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="Margin" Value="0,0,4,0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Border.recent:pointerover Button.row-action, Border.recent:focus-within Button.row-action, Border.recent.pinned Button.pin">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="Border.recent.pinned Button.pin">
+    <Setter Property="Foreground" Value="{StaticResource Plumb.AccentOnDarkBrush}" />
+  </Style>
+  <Style Selector="Button.row-action:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.row-action:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+  </Style>
+</Styles>
