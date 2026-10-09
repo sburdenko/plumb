@@ -88,3 +88,7 @@ tests/Plumb.Tests   NUnit tests
 ## Stack
 
 .NET 10, Avalonia 12, CommunityToolkit.Mvvm, xBIM Essentials 6, NUnit.
+
+## License
+
+MIT. xBIM is licensed separately under CDDL 1.0.
