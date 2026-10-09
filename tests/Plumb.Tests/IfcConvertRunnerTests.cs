@@ -65,23 +65,38 @@ public sealed class IfcConvertRunnerTests
     [Test]
     public async Task SlowConversionTimesOutAndLeavesNoFile()
     {
-        var state = await Runner(TimeSpan.FromMilliseconds(50)).ConvertAsync(Samples.Duplex, _glb, CancellationToken.None);
+        var started = new List<int>();
+        var runner = new IfcConvertRunner(Converters.IfcConvert, TimeSpan.FromMilliseconds(50), NullLogger<IfcConvertRunner>.Instance)
+        {
+            ProcessStarted = started.Add,
+        };
+
+        var state = await runner.ConvertAsync(Samples.Duplex, _glb, CancellationToken.None);
 
         Assert.That(((GeometryState.NotBuilt)state).Error, Is.EqualTo(GeometryError.Timeout));
         Assert.That(File.Exists(_glb), Is.False);
-        AssertNoConverterRunning();
+        AssertStopped(started);
     }
 
     [Test]
     public void CancellationStopsTheConverterAndThrows()
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        using var cts = new CancellationTokenSource();
+        var started = new List<int>();
+        var runner = new IfcConvertRunner(Converters.IfcConvert, GenerousTimeout, NullLogger<IfcConvertRunner>.Instance)
+        {
+            ProcessStarted = pid =>
+            {
+                started.Add(pid);
+                cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+            },
+        };
 
         Assert.That(
-            async () => await Runner(GenerousTimeout).ConvertAsync(Samples.Duplex, _glb, cts.Token),
+            async () => await runner.ConvertAsync(Samples.Duplex, _glb, cts.Token),
             Throws.InstanceOf<OperationCanceledException>());
         Assert.That(File.Exists(_glb), Is.False);
-        AssertNoConverterRunning();
+        AssertStopped(started);
     }
 
     [Test]
@@ -124,19 +139,22 @@ public sealed class IfcConvertRunnerTests
     private static IfcConvertRunner Runner(TimeSpan timeout) =>
         new(Converters.IfcConvert, timeout, NullLogger<IfcConvertRunner>.Instance);
 
-    private static void AssertNoConverterRunning()
+    private static void AssertStopped(IReadOnlyList<int> started)
     {
-        var running = Process.GetProcessesByName("IfcConvert");
+        Assert.That(started, Has.Count.EqualTo(1), "the converter should have been started once");
+        Assert.That(HasExited(started[0]), Is.True, "IfcConvert must be stopped, not left running");
+    }
+
+    private static bool HasExited(int processId)
+    {
         try
         {
-            Assert.That(running, Is.Empty, "IfcConvert must be stopped, not left running");
+            using var process = Process.GetProcessById(processId);
+            return process.HasExited;
         }
-        finally
+        catch (ArgumentException)
         {
-            foreach (var process in running)
-            {
-                process.Dispose();
-            }
+            return true;
         }
     }
 }

@@ -19,6 +19,9 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
     public static string DefaultExecutablePath =>
         Path.Combine(AppContext.BaseDirectory, "tools", "ifcconvert", OperatingSystem.IsWindows() ? "IfcConvert.exe" : "IfcConvert");
 
+    /// <summary>Lets tests check that this run's own process was stopped.</summary>
+    internal Action<int>? ProcessStarted { get; init; }
+
     public async Task<GeometryState> ConvertAsync(string ifcPath, string glbPath, CancellationToken cancellationToken)
     {
         if (!File.Exists(executablePath))
@@ -36,6 +39,8 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
             logger.LogError(ex, "Cannot start {Converter}", executablePath);
             return NotBuilt(GeometryError.ConverterFailed, $"IfcConvert could not be started: {ex.Message}");
         }
+
+        ProcessStarted?.Invoke(process.Id);
 
         // Both streams are drained while the process runs; a full pipe buffer would otherwise block it.
         var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
@@ -96,6 +101,12 @@ public sealed partial class IfcConvertRunner(string executablePath, TimeSpan tim
         }
         catch (OperationCanceledException)
         {
+            // Finishing just as the time limit fired is a result, not a timeout; a user cancel always wins.
+            if (!cancellationToken.IsCancellationRequested && process.HasExited)
+            {
+                return Outcome.Exited;
+            }
+
             await StopAsync(process).ConfigureAwait(false);
             return cancellationToken.IsCancellationRequested ? Outcome.Cancelled : Outcome.TimedOut;
         }

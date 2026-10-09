@@ -59,13 +59,19 @@ public sealed class GeometryPipelineTests
             }
         });
 
-        var result = await Service(Converters.IfcConvert).RunAsync(_ifc, _temp.Path, progress, cts.Token);
+        var started = new List<int>();
+        var converter = new IfcConvertRunner(Converters.IfcConvert, TimeSpan.FromMinutes(2), NullLogger<IfcConvertRunner>.Instance)
+        {
+            ProcessStarted = started.Add,
+        };
+
+        var result = await new ImportService(NullLogger<ImportService>.Instance, converter).RunAsync(_ifc, _temp.Path, progress, cts.Token);
 
         Assert.That(((ImportResult.Failure)result).Error, Is.EqualTo(ImportError.Cancelled));
         Assert.That(Directory.GetFileSystemEntries(_temp.Path).Select(Path.GetFileName), Is.EqualTo(new[] { "Duplex.ifc" }));
-        var running = Process.GetProcessesByName("IfcConvert");
-        Assert.That(running, Is.Empty);
-        Array.ForEach(running, p => p.Dispose());
+        Assert.That(started, Has.Count.EqualTo(1));
+        using var process = TryGetProcess(started[0]);
+        Assert.That(process == null || process.HasExited, Is.True, "IfcConvert must be stopped");
     }
 
     [Test]
@@ -79,6 +85,18 @@ public sealed class GeometryPipelineTests
         Assert.That(success.Model.Elements, Is.Not.Empty);
         var saved = (PackageState.Saved)success.Package;
         Assert.That(((GeometryState.NotBuilt)saved.Geometry).Error, Is.EqualTo(GeometryError.ConverterMissing));
+    }
+
+    private static Process? TryGetProcess(int processId)
+    {
+        try
+        {
+            return Process.GetProcessById(processId);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private static ImportService Service(string converterPath) =>
