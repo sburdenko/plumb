@@ -12,8 +12,8 @@
                 <StackPanel Spacing="2">
                     <TextBlock Text="{Binding FileName}" FontSize="18" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding Summary}" Opacity="0.7" />
-                    <TextBlock Text="{Binding SaveWarning}"
-                               IsVisible="{Binding SaveWarning, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    <TextBlock Text="{Binding Warning}"
+                               IsVisible="{Binding Warning, Converter={x:Static ObjectConverters.IsNotNull}}"
                                Foreground="{DynamicResource PlumbWarningBrush}"
                                TextWrapping="Wrap" />
                     <TextBlock Text="{Binding RevealError}"

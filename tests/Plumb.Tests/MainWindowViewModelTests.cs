@@ -188,9 +188,23 @@ public sealed class MainWindowViewModelTests
         await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
 
         var loaded = (LoadedViewModel)_viewModel.CurrentState;
-        Assert.That(loaded.SaveWarning, Is.EqualTo("Could not save a.plumb: read-only"));
+        Assert.That(loaded.Warning, Is.EqualTo("Could not save a.plumb: read-only"));
         Assert.That(loaded.CanReveal, Is.False);
         Assert.That(loaded.RevealCommand.CanExecute(null), Is.False);
+    }
+
+    [Test]
+    public async Task MissingGeometryShowsAWarningButKeepsReveal()
+    {
+        const string reason = "3D geometry was not built: IfcConvert is not installed next to Plumb.";
+        var geometry = new GeometryState.NotBuilt(GeometryError.ConverterMissing, reason);
+        _importService.Next = Loaded with { Package = new PackageState.Saved("/models/a.plumb", geometry) };
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
+
+        var loaded = (LoadedViewModel)_viewModel.CurrentState;
+        Assert.That(loaded.Warning, Is.EqualTo(reason));
+        Assert.That(loaded.CanReveal, Is.True);
     }
 
     [Test]
@@ -201,7 +215,7 @@ public sealed class MainWindowViewModelTests
         await _viewModel.OpenPathCommand.ExecuteAsync("a.ifc").WaitAsync(TestTimeout);
 
         var loaded = (LoadedViewModel)_viewModel.CurrentState;
-        Assert.That(loaded.SaveWarning, Is.Null);
+        Assert.That(loaded.Warning, Is.Null);
         Assert.That(loaded.CanReveal, Is.True);
     }
 
