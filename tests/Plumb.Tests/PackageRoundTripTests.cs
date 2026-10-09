@@ -113,6 +113,16 @@ public sealed class PackageRoundTripTests
     }
 
     [Test]
+    public void ElementIndexKeepsEveryKeyEvenWhenEmpty()
+    {
+        using var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(_package, PackageLayout.ElementIndexFile)));
+        var building = json.RootElement.EnumerateArray().Single(e => e.GetProperty("id").GetString() == "B");
+
+        Assert.That(building.EnumerateObject().Select(p => p.Name), Is.EqualTo(new[] { "id", "type", "name", "storey" }));
+        Assert.That(building.GetProperty("name").ValueKind, Is.EqualTo(JsonValueKind.Null));
+    }
+
+    [Test]
     public void DatabaseHasTheDocumentedTablesAndIndex()
     {
         var connectionString = new SqliteConnectionStringBuilder
