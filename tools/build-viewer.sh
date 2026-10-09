@@ -18,10 +18,11 @@ if [[ ! -x "$editor" ]]; then
     exit 1
 fi
 
-log="$(mktemp -t plumb-viewer-build)"
+# A template ending in X works with both BSD mktemp (macOS) and GNU mktemp (Git Bash on Windows).
+log="$(mktemp "${TMPDIR:-/tmp}/plumb-viewer-build.XXXXXX")"
 if ! "$editor" -batchmode -quit -projectPath "$PWD/viewer" \
         -executeMethod "Plumb.Viewer.Editor.BuildViewer.${method}" -logFile "$log"; then
-    grep -E "error|Exception" "$log" | tail -20 >&2
+    grep -E "error|Exception" "$log" | tail -20 >&2 || true
     echo "Viewer build failed; full log: ${log}" >&2
     exit 1
 fi
