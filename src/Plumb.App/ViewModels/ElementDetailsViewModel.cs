@@ -2,7 +2,14 @@ using Plumb.Core.Model;
 
 namespace Plumb.App.ViewModels;
 
-public sealed record PropertyRowViewModel(string Name, string Value);
+/// <param name="Unit">Shown after the value in a muted colour; null when unitless.</param>
+public sealed record PropertyRowViewModel(string Key, string Value, string? Unit)
+{
+    /// <summary>The unit with its leading space, or empty; shown as a second run after the value.</summary>
+    public string UnitSuffix => Unit == null ? string.Empty : " " + Unit;
+
+    public string FullValue => Value + UnitSuffix;
+}
 
 public sealed record PropertyGroupViewModel(string Name, IReadOnlyList<PropertyRowViewModel> Rows);
 
@@ -10,12 +17,12 @@ public sealed class ElementDetailsViewModel : ViewModelBase
 {
     private const string NoValue = "—";
 
-    public ElementDetailsViewModel(string name, ElementRecord element, string? storeyName, IEnumerable<PropertyRecord> properties)
+    public ElementDetailsViewModel(ElementRecord element, string? storeyName, IEnumerable<PropertyRecord> properties)
     {
-        Name = name;
-        IfcType = element.IfcType;
+        Title = string.IsNullOrWhiteSpace(element.Name) ? element.IfcType : element.Name;
+        Kicker = element.IfcType.ToUpperInvariant();
         GlobalId = element.GlobalId;
-        Storey = storeyName ?? NoValue;
+        Storey = storeyName;
         Groups = properties
             .GroupBy(p => p.Pset)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
@@ -25,21 +32,19 @@ public sealed class ElementDetailsViewModel : ViewModelBase
             .ToList();
     }
 
-    public string Name { get; }
+    /// <summary>The IFC type in capitals, shown above the title.</summary>
+    public string Kicker { get; }
 
-    public string IfcType { get; }
+    public string Title { get; }
 
     public string GlobalId { get; }
 
-    public string Storey { get; }
+    public string? Storey { get; }
 
     public IReadOnlyList<PropertyGroupViewModel> Groups { get; }
 
     public bool HasProperties => Groups.Count > 0;
 
-    private static PropertyRowViewModel ToRow(PropertyRecord property)
-    {
-        var value = string.IsNullOrEmpty(property.Value) ? NoValue : property.Value;
-        return new PropertyRowViewModel(property.Name, property.Unit == null ? value : $"{value} {property.Unit}");
-    }
+    private static PropertyRowViewModel ToRow(PropertyRecord property) =>
+        new(property.Name, string.IsNullOrEmpty(property.Value) ? NoValue : property.Value, property.Unit);
 }

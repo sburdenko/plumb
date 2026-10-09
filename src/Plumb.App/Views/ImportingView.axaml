@@ -1,12 +1,43 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Plumb.App.ViewModels"
+             xmlns:controls="using:Plumb.App.Controls"
              x:Class="Plumb.App.Views.ImportingView"
              x:DataType="vm:ImportingViewModel">
-    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Width="420">
-        <TextBlock Text="{Binding FileName}" FontSize="20" HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding StepText}" Opacity="0.7" HorizontalAlignment="Center" />
-        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percent}" ShowProgressText="True" />
-        <Button Content="Cancel" Command="{Binding CancelCommand}" HorizontalAlignment="Center" />
+    <UserControl.Styles>
+        <Style Selector="TextBlock.stepName">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+        </Style>
+        <Style Selector="TextBlock.stepName.active">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+        </Style>
+    </UserControl.Styles>
+    <StackPanel Margin="96,120,96,0" Width="560" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <TextBlock Classes="kicker" Text="{Binding Kicker}" />
+        <TextBlock Margin="0,8,0,0" Text="{Binding FileName}" FontSize="32" FontWeight="ExtraBold" TextTrimming="CharacterEllipsis" />
+        <Border Margin="0,28,0,0" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,1,0,0">
+            <ItemsControl ItemsSource="{Binding Steps}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:PipelineStepViewModel">
+                        <Border BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,1">
+                            <Grid RowDefinitions="34,2" ColumnDefinitions="40,*,Auto">
+                                <TextBlock Text="{Binding Number}" FontSize="13" FontWeight="ExtraBold" Classes="numbers" VerticalAlignment="Center"
+                                           Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                                <TextBlock Grid.Column="1" Classes="stepName" Classes.active="{Binding !IsPending}" Text="{Binding Name}" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <controls:LucideIcon Data="{StaticResource Icon.Check}" Size="14" IsVisible="{Binding IsDone}" VerticalAlignment="Center" />
+                                    <TextBlock Classes="muted numbers" FontSize="13" Text="{Binding StatusText}" />
+                                </StackPanel>
+                                <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Height="2" MinHeight="2" IsIndeterminate="True" IsVisible="{Binding IsRunning}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <ProgressBar Margin="0,24,0,0" Height="4" MinHeight="4" Minimum="0" Maximum="100" Value="{Binding Percent}" />
+        <Button Margin="0,24,0,0" Classes="secondary" Content="Cancel" Command="{Binding CancelCommand}" />
     </StackPanel>
 </UserControl>

@@ -159,7 +159,8 @@ public sealed class ImportServicePackageTests
 
         Assert.That(reports.Select(r => r.Step).Distinct(), Is.EqualTo(new[]
         {
-            ImportStep.Validating, ImportStep.ReadingModel, ImportStep.ConvertingGeometry, ImportStep.WritingPackage, ImportStep.Finalizing,
+            ImportStep.Validating, ImportStep.Snapshot, ImportStep.ReadingModel, ImportStep.ConvertingGeometry,
+            ImportStep.WritingPackage, ImportStep.Finalizing,
         }));
         Assert.That(reports.Select(r => r.Percent), Is.Ordered);
         Assert.That(reports[^1].Percent, Is.EqualTo(100));

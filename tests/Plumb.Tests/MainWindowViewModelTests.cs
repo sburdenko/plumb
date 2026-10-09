@@ -75,14 +75,43 @@ public sealed class MainWindowViewModelTests
     }
 
     [Test]
-    public async Task FailedImportShowsEmptyWithMessage()
+    public async Task FailedImportShowsTheFailureWithTheFileAndReason()
     {
         _importService.Next = new ImportResult.Failure(ImportError.NotIfc, "Not an .ifc file: a.txt");
 
-        await _viewModel.OpenPathCommand.ExecuteAsync("a.txt").WaitAsync(TestTimeout);
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.txt").WaitAsync(TestTimeout);
 
-        var empty = (EmptyStateViewModel)_viewModel.CurrentState;
-        Assert.That(empty.ErrorMessage, Is.EqualTo("Not an .ifc file: a.txt"));
+        var failed = (FailedViewModel)_viewModel.CurrentState;
+        Assert.That(failed.FileName, Is.EqualTo("a.txt"));
+        Assert.That(failed.Message, Is.EqualTo("Not an .ifc file: a.txt"));
+    }
+
+    [Test]
+    public async Task TryAgainOpensTheSameFile()
+    {
+        _importService.Next = new ImportResult.Failure(ImportError.ParseFailed, "broken");
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.ifc").WaitAsync(TestTimeout);
+        _importService.Next = Loaded;
+
+        await ((FailedViewModel)_viewModel.CurrentState).TryAgainCommand.ExecuteAsync(null).WaitAsync(TestTimeout);
+
+        Assert.That(_importService.Calls.Select(c => c.Path), Is.EqualTo(new[] { "/models/a.ifc", "/models/a.ifc" }));
+        Assert.That(_viewModel.CurrentState, Is.TypeOf<LoadedViewModel>());
+    }
+
+    [Test]
+    public async Task OpeningAPackageSaysOpenedAndImportingSaysImported()
+    {
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.plumb").WaitAsync(TestTimeout);
+        var opened = (LoadedViewModel)_viewModel.CurrentState;
+        _importService.Next = Loaded;
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.ifc").WaitAsync(TestTimeout);
+        var imported = (LoadedViewModel)_viewModel.CurrentState;
+
+        Assert.That(opened.LoadLabel, Is.EqualTo("Opened in"));
+        Assert.That(opened.FileName, Is.EqualTo("a.plumb"));
+        Assert.That(imported.LoadLabel, Is.EqualTo("Imported in"));
     }
 
     [Test]
