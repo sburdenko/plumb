@@ -12,7 +12,8 @@ internal static class PackageJson
 {
     // By default System.Text.Json fills missing constructor parameters with defaults and ignores
     // nullable annotations, so a manifest without "sourceFile" would load with a null name.
-    private static readonly JsonSerializerOptions Options = new()
+    // Null optional fields are left out, so a manifest without geometry problems matches the documented format.
+    private static readonly JsonSerializerOptions ManifestOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
@@ -22,12 +23,19 @@ internal static class PackageJson
         Converters = { new JsonStringEnumConverter() },
     };
 
+    // Every entry keeps all four keys, with null where there is no name or storey.
+    private static readonly JsonSerializerOptions IndexOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true,
+    };
+
     public static void WriteManifest(string path, PackageManifest manifest) =>
-        File.WriteAllText(path, JsonSerializer.Serialize(manifest, Options));
+        File.WriteAllText(path, JsonSerializer.Serialize(manifest, ManifestOptions));
 
     /// <exception cref="JsonException">The file is not a valid manifest.</exception>
     public static PackageManifest ReadManifest(string path) =>
-        JsonSerializer.Deserialize<PackageManifest>(File.ReadAllText(path), Options)
+        JsonSerializer.Deserialize<PackageManifest>(File.ReadAllText(path), ManifestOptions)
             ?? throw new JsonException("The manifest is empty.");
 
     public static void WriteElementIndex(string path, IReadOnlyList<ElementRecord> elements)
@@ -42,6 +50,6 @@ internal static class PackageJson
             e.Name,
             e.StoreyGlobalId == null ? null : storeyNames.GetValueOrDefault(e.StoreyGlobalId)));
 
-        File.WriteAllText(path, JsonSerializer.Serialize(entries, Options));
+        File.WriteAllText(path, JsonSerializer.Serialize(entries, IndexOptions));
     }
 }
