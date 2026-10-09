@@ -53,12 +53,14 @@ public sealed class IfcConvertRunnerTests
     public async Task UnreadableIfcIsConverterFailedWithTheReason()
     {
         var junk = _temp.WriteFile("junk.ifc", "not an ifc file");
+        var log = new CollectingLogger<IfcConvertRunner>();
+        var runner = new IfcConvertRunner(Converters.IfcConvert, GenerousTimeout, log);
 
-        var state = await Runner(GenerousTimeout).ConvertAsync(junk, _glb, CancellationToken.None);
+        var state = await runner.ConvertAsync(junk, _glb, CancellationToken.None);
 
         var notBuilt = (GeometryState.NotBuilt)state;
         Assert.That(notBuilt.Error, Is.EqualTo(GeometryError.ConverterFailed));
-        Assert.That(notBuilt.Detail, Does.StartWith("exit code 1: ").And.Contain("Unable to parse"));
+        Assert.That(notBuilt.Detail, Does.StartWith("exit code 1: ").And.Contain("Unable to parse"), () => log.Text);
         Assert.That(File.Exists(_glb), Is.False);
     }
 
