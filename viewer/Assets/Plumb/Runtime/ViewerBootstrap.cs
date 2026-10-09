@@ -8,15 +8,13 @@ namespace Plumb.Viewer
     /// </summary>
     public static class ViewerBootstrap
     {
-        private static readonly Color Background = new Color(0.12f, 0.12f, 0.13f);
-
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Start()
         {
             var viewCamera = new GameObject("Camera").AddComponent<Camera>();
             viewCamera.tag = "MainCamera";
             viewCamera.clearFlags = CameraClearFlags.SolidColor;
-            viewCamera.backgroundColor = Background;
+            viewCamera.backgroundColor = Graphite.Ink;
             viewCamera.fieldOfView = 45f;
 
             var sun = new GameObject("Sun").AddComponent<Light>();
