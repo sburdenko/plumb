@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -17,6 +18,7 @@ namespace Plumb.Viewer.Editor
     {
         private const string ScenePath = "Assets/Scenes/Viewer.unity";
         private const string ProductName = "Plumb Viewer";
+        private const string IconPath = "Assets/Plumb/Icons/viewer-icon.png";
 
         // glTFast finds these by name at runtime; without this the build strips them and models render magenta.
         private static readonly string[] GltfShaders = { "glTF/PbrMetallicRoughness", "glTF/PbrSpecularGlossiness", "glTF/Unlit" };
@@ -111,6 +113,19 @@ namespace Plumb.Viewer.Editor
             PlayerSettings.defaultScreenHeight = 800;
             PlayerSettings.resizableWindow = true;
             PlayerSettings.runInBackground = true;
+
+            // The splash fades out over the first seconds of the scene and dims the overlay drawn on top of it.
+            PlayerSettings.SplashScreen.show = false;
+
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(IconPath)
+                ?? throw new BuildFailedException($"Viewer icon not found at {IconPath}; run tools/icons/render_icons.py.");
+
+            // The default icon lives under Unknown; a Standalone override needs one texture per size and silently drops a single one.
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
+            if (PlayerSettings.GetIcons(NamedBuildTarget.Unknown, IconKind.Any).FirstOrDefault() != icon)
+            {
+                throw new BuildFailedException($"Unity did not accept {IconPath} as the application icon.");
+            }
         }
     }
 }
