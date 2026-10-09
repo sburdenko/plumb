@@ -1,13 +1,27 @@
 <Project>
-  <!-- Copies the IfcConvert build for the current OS to tools/ifcconvert/ in the output folder. -->
+  <!--
+    Copies IfcConvert to tools/ifcconvert/ in the output. With a runtime identifier (dotnet publish -r win-x64)
+    the build for that target is used and must have been fetched; without one, the build for this machine.
+  -->
   <PropertyGroup>
-    <IfcConvertPlatform Condition="$([MSBuild]::IsOSPlatform('OSX'))">macos-arm64</IfcConvertPlatform>
-    <IfcConvertPlatform Condition="$([MSBuild]::IsOSPlatform('Windows'))">win-x64</IfcConvertPlatform>
-    <IfcConvertPlatform Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="'$(RuntimeIdentifier)' == 'osx-arm64'">macos-arm64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="'$(RuntimeIdentifier)' == 'win-x64'">win-x64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="'$(RuntimeIdentifier)' == 'linux-x64'">linux-x64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">macos-arm64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win-x64</IfcConvertPlatform>
+    <IfcConvertPlatform Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</IfcConvertPlatform>
     <IfcConvertSource>$(MSBuildThisFileDirectory)ifcconvert/$(IfcConvertPlatform)/</IfcConvertSource>
   </PropertyGroup>
-  <ItemGroup Condition="Exists('$(IfcConvertSource)')">
+
+  <ItemGroup Condition="'$(IfcConvertPlatform)' != '' and Exists('$(IfcConvertSource)')">
     <None Include="$(IfcConvertSource)**" Exclude="$(IfcConvertSource).version"
           LinkBase="tools/ifcconvert" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
+
+  <Target Name="RequireIfcConvertForTarget" BeforeTargets="Build" Condition="'$(RuntimeIdentifier)' != ''">
+    <Error Condition="'$(IfcConvertPlatform)' == ''"
+           Text="No IfcConvert build is set up for $(RuntimeIdentifier). Supported: osx-arm64, win-x64, linux-x64." />
+    <Error Condition="'$(IfcConvertPlatform)' != '' and !Exists('$(IfcConvertSource)')"
+           Text="IfcConvert for $(RuntimeIdentifier) is missing. Run: tools/fetch-ifcconvert.sh $(IfcConvertPlatform)" />
+  </Target>
 </Project>
