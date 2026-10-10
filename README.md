@@ -50,6 +50,12 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 
 Measured on Apple Silicon with a Release build in a warm process.
 
+## Download
+
+Plumb for macOS on Apple Silicon is attached to each [release](https://github.com/sburdenko/plumb/releases) as `Plumb-<version>-macos-arm64.zip`, with IfcConvert and the Unity viewer inside. Unzip it and move `Plumb.app` to Applications.
+
+The app is not notarized by Apple, so the first launch is blocked. Open **System Settings → Privacy & Security** and choose **Open Anyway** next to the message about Plumb; macOS remembers the choice. Windows and Linux users build from source as described below.
+
 ## Architecture
 
 Every project does one job and references only what that job needs. Each box depends only on the boxes below it.
@@ -176,7 +182,7 @@ To get a standalone `Plumb.app` with its icon, IfcConvert and the viewer inside 
 tools/bundle-macos.sh
 ```
 
-It lands in `dist/` and runs without the .NET SDK installed.
+It lands in `dist/` together with the zip for a release, signed ad hoc, and runs without the .NET SDK installed.
 
 ## Tests
 
