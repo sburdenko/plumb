@@ -41,6 +41,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         CurrentState = Empty(errorMessage: null);
     }
 
+    /// <summary>The recent models, for the start screen and the system menus.</summary>
+    public RecentModelsViewModel Recent => _recent;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OpenIfcCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenPackageCommand))]
