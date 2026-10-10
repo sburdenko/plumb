@@ -109,55 +109,7 @@
 
             <Panel Grid.Row="1" Background="{StaticResource Plumb.GridBrush}">
                 <StackPanel Margin="48,120,48,0" HorizontalAlignment="Left" VerticalAlignment="Top" Spacing="16">
-                    <ContentControl Content="{Binding Viewport}">
-                        <ContentControl.DataTemplates>
-                            <DataTemplate DataType="viewport:ViewportReadyViewModel">
-                                <StackPanel Spacing="6">
-                                    <TextBlock Text="3D view" FontSize="20" FontWeight="ExtraBold" />
-                                    <TextBlock Classes="muted numbers" Text="{Binding Detail}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,18,0,0">
-                                        <Button Classes="primary" Command="{Binding OpenIn3D}">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <controls:LucideIcon Data="{StaticResource Icon.Box}" Size="16" VerticalAlignment="Center" />
-                                                <TextBlock Text="Open in Unity viewer" />
-                                            </StackPanel>
-                                        </Button>
-                                    </StackPanel>
-                                </StackPanel>
-                            </DataTemplate>
-                            <DataTemplate DataType="viewport:ViewportGeometryMissingViewModel">
-                                <StackPanel MaxWidth="460" Spacing="0">
-                                    <Rectangle Height="4" Fill="{StaticResource Plumb.AccentBrush}" />
-                                    <controls:LucideIcon Margin="0,16,0,0" HorizontalAlignment="Left" Data="{StaticResource Icon.TriangleAlert}"
-                                                         Size="28" Foreground="{StaticResource Plumb.AccentBrush}" />
-                                    <TextBlock Margin="0,12,0,0" Text="3D geometry was not built" FontSize="22" FontWeight="ExtraBold" />
-                                    <TextBlock Margin="0,8,0,0" Classes="dim" FontSize="14" TextWrapping="Wrap" Text="{Binding Reason}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
-                                        <Button Classes="primary" Content="Re-import with geometry" IsVisible="{Binding CanReimport}"
-                                                Command="{Binding OpenPath}" CommandParameter="{Binding SourcePath}" />
-                                        <Button Classes="secondary" Content="Details" IsVisible="{Binding HasDetail}">
-                                            <Button.Flyout>
-                                                <Flyout Placement="BottomEdgeAlignedLeft">
-                                                    <SelectableTextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="13" />
-                                                </Flyout>
-                                            </Button.Flyout>
-                                        </Button>
-                                    </StackPanel>
-                                </StackPanel>
-                            </DataTemplate>
-                            <DataTemplate DataType="viewport:ViewportNotSavedViewModel">
-                                <StackPanel MaxWidth="460">
-                                    <Rectangle Height="4" Fill="{StaticResource Plumb.AccentBrush}" />
-                                    <controls:LucideIcon Margin="0,16,0,0" HorizontalAlignment="Left" Data="{StaticResource Icon.TriangleAlert}"
-                                                         Size="28" Foreground="{StaticResource Plumb.AccentBrush}" />
-                                    <TextBlock Margin="0,12,0,0" Text="Package not saved" FontSize="22" FontWeight="ExtraBold" />
-                                    <TextBlock Margin="0,8,0,0" Classes="dim" FontSize="14" TextWrapping="Wrap" Text="{Binding Reason}" />
-                                    <TextBlock Margin="0,8,0,0" Classes="dim" FontSize="14" TextWrapping="Wrap"
-                                               Text="The tree and properties are open and complete; 3D needs a saved package." />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ContentControl.DataTemplates>
-                    </ContentControl>
+                    <viewport:ViewportView DataContext="{Binding Viewport}" />
                     <TextBlock Text="{Binding ActionError}" IsVisible="{Binding ActionError, Converter={x:Static ObjectConverters.IsNotNull}}"
                                Foreground="{StaticResource Plumb.AccentOnDarkBrush}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left" />
                 </StackPanel>
@@ -182,40 +134,7 @@
                     <TextBlock Classes="muted" Text="Select an element in the tree or the 3D view." TextWrapping="Wrap" />
                 </StackPanel>
                 <ScrollViewer DataContext="{Binding SelectedElement}" IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <StackPanel x:DataType="properties:ElementDetailsViewModel">
-                        <Border Padding="16" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,2">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="{Binding Kicker}" />
-                                <SelectableTextBlock Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" LineHeight="24" TextWrapping="Wrap" />
-                                <SelectableTextBlock Classes="muted numbers" FontSize="12" Text="{Binding GlobalId}" ToolTip.Tip="IFC GlobalId" />
-                            </StackPanel>
-                        </Border>
-                        <TextBlock Margin="16" Classes="muted" Text="This element has no properties." IsVisible="{Binding !HasProperties}" />
-                        <ItemsControl ItemsSource="{Binding Groups}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="properties:PropertyGroupViewModel">
-                                    <Border Padding="16,12" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,1">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontWeight="ExtraBold" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
-                                            <ItemsControl ItemsSource="{Binding Rows}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="properties:PropertyRowViewModel">
-                                                        <Grid ColumnDefinitions="*,10,*" Margin="0,4">
-                                                            <TextBlock Classes="muted" Text="{Binding Key}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Key}" />
-                                                            <TextBlock Grid.Column="2" Classes="numbers" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FullValue}">
-                                                                <Run Text="{Binding Value}" FontWeight="SemiBold" />
-                                                                <Run Text="{Binding UnitSuffix}" Foreground="{StaticResource Plumb.TextMutedBrush}" />
-                                                            </TextBlock>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
+                    <properties:ElementDetailsView />
                 </ScrollViewer>
             </Panel>
         </Border>
