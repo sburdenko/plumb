@@ -9,7 +9,7 @@ namespace Plumb.App.ViewModels;
 /// Shows the pipeline while an IFC file is imported or a package is opened: each step turns from pending
 /// to running to done as progress reports arrive.
 /// </summary>
-public sealed partial class ImportingViewModel : ViewModelBase
+public sealed partial class ImportingViewModel : ScreenViewModel
 {
     private static readonly (ImportStep Step, string Name)[] ImportSteps =
     [

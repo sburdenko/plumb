@@ -45,7 +45,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(OpenIfcCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenPackageCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenPathCommand))]
-    public partial ViewModelBase CurrentState { get; private set; }
+    public partial ScreenViewModel CurrentState { get; private set; }
 
     private bool CanStartLoading() => CurrentState is not ImportingViewModel;
 
@@ -119,7 +119,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private ViewModelBase NextState(ImportResult result, ViewModelBase previous, string path, bool openedPackage, TimeSpan loadTime) =>
+    private ScreenViewModel NextState(ImportResult result, ScreenViewModel previous, string path, bool openedPackage, TimeSpan loadTime) =>
         result switch
         {
             ImportResult.Success success => Loaded(new LoadedModel(success, path, openedPackage, loadTime)),
