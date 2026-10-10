@@ -15,8 +15,9 @@
         shell:FileDrop.Command="{Binding OpenPathCommand}">
 
     <Window.KeyBindings>
+        <!-- ⌘O and ⇧⌘O belong to the macOS File menu (SystemMenus); binding them here too would open twice. -->
         <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenIfcCommand}" />
-        <KeyBinding Gesture="Meta+O" Command="{Binding OpenIfcCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+O" Command="{Binding OpenPackageCommand}" />
     </Window.KeyBindings>
 
     <Window.Styles>

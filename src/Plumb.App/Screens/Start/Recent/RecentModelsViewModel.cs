@@ -40,6 +40,10 @@ public sealed partial class RecentModelsViewModel : ViewModelBase
     [ObservableProperty]
     public partial IReadOnlyList<RecentModelItemViewModel> Recent { get; private set; } = [];
 
+    /// <summary>Pinned models and the ten newest others, ignoring the filter: the Open Recent and Dock menus.</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<RecentModelItemViewModel> MenuItems { get; private set; } = [];
+
     [ObservableProperty]
     public partial int HiddenCount { get; private set; }
 
@@ -113,6 +117,10 @@ public sealed partial class RecentModelsViewModel : ViewModelBase
         Pinned = matching.Where(model => model.IsPinned).Select(model => Item(model, now)).ToList();
         Recent = shown.Select(model => Item(model, now)).ToList();
         HiddenCount = unpinned.Count - shown.Count;
+        MenuItems = _models.Models.Where(model => model.IsPinned)
+            .Concat(_models.Models.Where(model => !model.IsPinned).Take(ShownByDefault))
+            .Select(model => Item(model, now))
+            .ToList();
 
         OnPropertyChanged(nameof(IsEmpty));
         OnPropertyChanged(nameof(HasPinned));

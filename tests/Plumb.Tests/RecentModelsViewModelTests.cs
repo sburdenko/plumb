@@ -123,6 +123,18 @@ public sealed class RecentModelsViewModelTests
     }
 
     [Test]
+    public void MenusListPinnedModelsAndTheTenNewestWhateverTheFilter()
+    {
+        Seed(Enumerable.Range(1, 14).Select(i => Model($"m{i}", i, pinned: i == 14)).ToArray());
+        var recent = ViewModel();
+
+        recent.Filter = "m3";
+
+        Assert.That(recent.MenuItems.Select(i => i.Title),
+            Is.EqualTo(new[] { "m14" }.Concat(Enumerable.Range(1, RecentModelsViewModel.ShownByDefault).Select(i => $"m{i}"))));
+    }
+
+    [Test]
     public async Task OpeningAModelOpensItsPackage()
     {
         var model = Model("Duplex", 1);
