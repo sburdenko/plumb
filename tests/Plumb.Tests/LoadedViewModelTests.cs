@@ -128,7 +128,7 @@ public sealed class LoadedViewModelTests
 
     private static LoadedViewModel Create(PackageState package) =>
         new(new LoadedModel(new ImportResult.Success(Model, TimeSpan.FromSeconds(3), package), "/m/House.ifc", OpenedPackage: false, TimeSpan.FromMilliseconds(1234)),
-            Open, new NoRevealer(), new NoViewer());
+            Open, new PlatformServices(new NoPicker(), new NoRevealer(), new NoViewer(), new FakeClipboard()), TimeProvider.System);
 
     private static byte[] Glb(string json)
     {
@@ -142,6 +142,13 @@ public sealed class LoadedViewModelTests
         bytes.AddRange(BitConverter.GetBytes(0x4E4F534Au));
         bytes.AddRange(chunk);
         return bytes.ToArray();
+    }
+
+    private sealed class NoPicker : IFilePickerService
+    {
+        public Task<string?> PickIfcFileAsync() => Task.FromResult<string?>(null);
+
+        public Task<string?> PickPackageAsync() => Task.FromResult<string?>(null);
     }
 
     private sealed class NoRevealer : IFileRevealer

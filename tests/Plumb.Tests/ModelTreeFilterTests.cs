@@ -12,7 +12,7 @@ public sealed class ModelTreeFilterTests
         new("L1", "IfcBuildingStorey", "Level 1", "P", "L1"),
         new("L2", "IfcBuildingStorey", "Level 2", "P", "L2"),
         new("W1", "IfcWall", "Exterior wall", "L1", "L1"),
-        new("W2", "IfcWall", "Interior wall", "L1", "L1"),
+        new("W2", "IfcWall", "Interior wall", "L1", "L1", Tag: "139117"),
         new("D1", "IfcDoor", "Exterior door", "L2", "L2"),
     ];
 
@@ -63,6 +63,16 @@ public sealed class ModelTreeFilterTests
 
         var level2 = (ElementNode)((ElementNode)result.Single()).Children.Single();
         Assert.That(level2.Label, Is.EqualTo("Level 2"));
+    }
+
+    [Test]
+    public void MatchesTag()
+    {
+        var result = ModelTreeFilter.Apply(_tree, "#139117");
+
+        var level1 = (ElementNode)((ElementNode)result.Single()).Children.Single();
+        var walls = (TypeGroupNode)level1.Children.Single();
+        Assert.That(walls.Children.OfType<ElementNode>().Select(e => e.Element.GlobalId), Is.EqualTo(new[] { "W2" }));
     }
 
     [Test]

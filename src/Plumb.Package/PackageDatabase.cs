@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Plumb.Core.Model;
+using Plumb.Core.Package;
 
 namespace Plumb.Package;
 
@@ -14,7 +15,9 @@ internal static class PackageDatabase
           ifc_type         TEXT NOT NULL,
           name             TEXT,
           parent_global_id TEXT,
-          storey_global_id TEXT
+          storey_global_id TEXT,
+          tag              TEXT,
+          elevation_m      REAL
         );
 
         CREATE TABLE properties (
@@ -23,6 +26,7 @@ internal static class PackageDatabase
           name       TEXT NOT NULL,
           value      TEXT,
           unit       TEXT,
+          source     TEXT NOT NULL CHECK (source IN ('instance', 'type')),
           FOREIGN KEY (global_id) REFERENCES elements(global_id)
         );
 
@@ -51,14 +55,16 @@ internal static class PackageDatabase
 
         var elements = Query(
             connection,
-            "SELECT global_id, ifc_type, name, parent_global_id, storey_global_id FROM elements ORDER BY rowid",
-            row => new ElementRecord(row.GetString(0), row.GetString(1), Text(row, 2), Text(row, 3), Text(row, 4)),
+            "SELECT global_id, ifc_type, name, parent_global_id, storey_global_id, tag, elevation_m FROM elements ORDER BY rowid",
+            row => new ElementRecord(
+                row.GetString(0), row.GetString(1), Text(row, 2), Text(row, 3), Text(row, 4), Text(row, 5), Number(row, 6)),
             cancellationToken);
 
         var properties = Query(
             connection,
-            "SELECT global_id, pset, name, value, unit FROM properties ORDER BY rowid",
-            row => new PropertyRecord(row.GetString(0), row.GetString(1), row.GetString(2), Text(row, 3), Text(row, 4)),
+            "SELECT global_id, pset, name, value, unit, source FROM properties ORDER BY rowid",
+            row => new PropertyRecord(
+                row.GetString(0), row.GetString(1), row.GetString(2), Text(row, 3), Text(row, 4), SourceOf(row.GetString(5))),
             cancellationToken);
 
         return (elements, properties);
@@ -88,14 +94,16 @@ internal static class PackageDatabase
         using var insert = connection.CreateCommand();
         insert.Transaction = transaction;
         insert.CommandText = """
-            INSERT INTO elements (global_id, ifc_type, name, parent_global_id, storey_global_id)
-            VALUES ($id, $type, $name, $parent, $storey)
+            INSERT INTO elements (global_id, ifc_type, name, parent_global_id, storey_global_id, tag, elevation_m)
+            VALUES ($id, $type, $name, $parent, $storey, $tag, $elevation)
             """;
         var id = insert.Parameters.Add("$id", SqliteType.Text);
         var type = insert.Parameters.Add("$type", SqliteType.Text);
         var name = insert.Parameters.Add("$name", SqliteType.Text);
         var parent = insert.Parameters.Add("$parent", SqliteType.Text);
         var storey = insert.Parameters.Add("$storey", SqliteType.Text);
+        var tag = insert.Parameters.Add("$tag", SqliteType.Text);
+        var elevation = insert.Parameters.Add("$elevation", SqliteType.Real);
 
         foreach (var element in elements)
         {
@@ -105,6 +113,8 @@ internal static class PackageDatabase
             name.Value = OrNull(element.Name);
             parent.Value = OrNull(element.ParentGlobalId);
             storey.Value = OrNull(element.StoreyGlobalId);
+            tag.Value = OrNull(element.Tag);
+            elevation.Value = element.Elevation is { } metres ? metres : DBNull.Value;
             insert.ExecuteNonQuery();
         }
     }
@@ -118,14 +128,15 @@ internal static class PackageDatabase
         using var insert = connection.CreateCommand();
         insert.Transaction = transaction;
         insert.CommandText = """
-            INSERT INTO properties (global_id, pset, name, value, unit)
-            VALUES ($id, $pset, $name, $value, $unit)
+            INSERT INTO properties (global_id, pset, name, value, unit, source)
+            VALUES ($id, $pset, $name, $value, $unit, $source)
             """;
         var id = insert.Parameters.Add("$id", SqliteType.Text);
         var pset = insert.Parameters.Add("$pset", SqliteType.Text);
         var name = insert.Parameters.Add("$name", SqliteType.Text);
         var value = insert.Parameters.Add("$value", SqliteType.Text);
         var unit = insert.Parameters.Add("$unit", SqliteType.Text);
+        var source = insert.Parameters.Add("$source", SqliteType.Text);
 
         foreach (var property in properties)
         {
@@ -135,6 +146,7 @@ internal static class PackageDatabase
             name.Value = property.Name;
             value.Value = OrNull(property.Value);
             unit.Value = OrNull(property.Unit);
+            source.Value = SourceText(property.Source);
             insert.ExecuteNonQuery();
         }
     }
@@ -192,4 +204,20 @@ internal static class PackageDatabase
     private static object OrNull(string? value) => value ?? (object)DBNull.Value;
 
     private static string? Text(SqliteDataReader row, int ordinal) => row.IsDBNull(ordinal) ? null : row.GetString(ordinal);
+
+    private static double? Number(SqliteDataReader row, int ordinal) => row.IsDBNull(ordinal) ? null : row.GetDouble(ordinal);
+
+    private static string SourceText(PropertySource source) => source switch
+    {
+        PropertySource.Instance => "instance",
+        PropertySource.Type => "type",
+        _ => throw new ArgumentOutOfRangeException(nameof(source), source, "Unknown property source."),
+    };
+
+    private static PropertySource SourceOf(string text) => text switch
+    {
+        "instance" => PropertySource.Instance,
+        "type" => PropertySource.Type,
+        _ => throw new PackageFormatException($"Unknown property source '{text}' in {PackageLayout.DatabaseFile}."),
+    };
 }

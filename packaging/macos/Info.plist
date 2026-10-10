@@ -22,5 +22,41 @@
     <string>12.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>IFC building model</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <!-- Alternate: offered in Open With without taking the default from the authoring tools. -->
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>org.buildingsmart.ifc</string>
+            </array>
+        </dict>
+    </array>
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>org.buildingsmart.ifc</string>
+            <key>UTTypeDescription</key>
+            <string>IFC building model</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>ifc</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
 </dict>
 </plist>

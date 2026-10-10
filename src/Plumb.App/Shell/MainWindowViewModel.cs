@@ -19,31 +19,30 @@ namespace Plumb.App.Shell;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IImportService _importService;
-    private readonly IFilePickerService _filePicker;
-    private readonly IFileRevealer _revealer;
-    private readonly IViewerLauncher _viewer;
+    private readonly PlatformServices _platform;
+    private readonly TimeProvider _clock;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly OpenCommands _open;
     private readonly RecentModelsViewModel _recent;
 
     public MainWindowViewModel(
         IImportService importService,
-        IFilePickerService filePicker,
-        IFileRevealer revealer,
-        IViewerLauncher viewer,
+        PlatformServices platform,
         IRecentModelStore recentModels,
         TimeProvider clock,
         ILogger<MainWindowViewModel> logger)
     {
         _importService = importService;
-        _filePicker = filePicker;
-        _revealer = revealer;
-        _viewer = viewer;
+        _platform = platform;
+        _clock = clock;
         _logger = logger;
         _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand, OpenPathCommand);
-        _recent = new RecentModelsViewModel(recentModels, OpenPathCommand, revealer, clock);
+        _recent = new RecentModelsViewModel(recentModels, OpenPathCommand, platform.Revealer, clock);
         CurrentState = Empty(errorMessage: null);
     }
+
+    /// <summary>The recent models, for the start screen and the system menus.</summary>
+    public RecentModelsViewModel Recent => _recent;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OpenIfcCommand))]
@@ -56,13 +55,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool CanOpenPath(string? path) => CanStartLoading() && !string.IsNullOrWhiteSpace(path);
 
     [RelayCommand(CanExecute = nameof(CanStartLoading))]
-    private Task OpenIfcAsync() => PickAndOpenAsync(_filePicker.PickIfcFileAsync);
+    private Task OpenIfcAsync() => PickAndOpenAsync(_platform.FilePicker.PickIfcFileAsync);
 
     [RelayCommand(CanExecute = nameof(CanStartLoading))]
-    private Task OpenPackageAsync() => PickAndOpenAsync(_filePicker.PickPackageAsync);
+    private Task OpenPackageAsync() => PickAndOpenAsync(_platform.FilePicker.PickPackageAsync);
 
     /// <summary>
-    /// Opens a <c>.plumb</c> package as is, or imports anything else as an IFC file.
+    /// Opens a <c>.plumb</c> package as is, or imports anything else as an IFC file. A package in an earlier format
+    /// is imported again from the IFC file next to it, which replaces the package.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanOpenPath))]
     private async Task OpenPathAsync(string? path)
@@ -82,6 +82,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var clock = Stopwatch.StartNew();
             var result = await LoadAsync(path, new Progress<ImportProgress>(importing.Report), cancellation.Token);
+            if (result is ImportResult.PackageOutdated { SourcePath: { } source })
+            {
+                _logger.LogInformation("{Package} has an earlier format; importing {Source} again", path, source);
+                CurrentState = previous;
+                await OpenPathAsync(source);
+                return;
+            }
+
             CurrentState = NextState(result, previous, path, opensPackage, clock.Elapsed);
         }
         catch (Exception ex)
@@ -131,13 +139,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ? previous
                 : Empty(errorMessage: null),
             ImportResult.Failure failure => new FailedViewModel(path, failure.Message, _open),
+            ImportResult.PackageOutdated outdated => new FailedViewModel(path, OutdatedMessage(path, outdated.SourceFile), _open),
             _ => throw new UnreachableException(),
         };
+
+    private static string OutdatedMessage(string packagePath, string sourceFile) =>
+        $"{Path.GetFileName(Path.TrimEndingDirectorySeparator(packagePath))} was saved by an earlier version of Plumb. "
+        + $"Open {sourceFile} to build it again; it is not next to the package.";
 
     private LoadedViewModel Loaded(LoadedModel model)
     {
         _recent.Record(model);
-        return new LoadedViewModel(model, _open, _revealer, _viewer);
+        return new LoadedViewModel(model, _open, _platform, _clock);
     }
 
     private EmptyStateViewModel Empty(string? errorMessage)

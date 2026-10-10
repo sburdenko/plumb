@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:properties="using:Plumb.App.Screens.Model.Properties"
+             xmlns:controls="using:Plumb.App.Controls"
              x:Class="Plumb.App.Screens.Model.Properties.ElementDetailsView"
              x:DataType="properties:ElementDetailsViewModel">
     <StackPanel>
@@ -8,7 +9,18 @@
             <StackPanel Spacing="6">
                 <TextBlock Classes="kicker" Text="{Binding Kicker}" />
                 <SelectableTextBlock Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" LineHeight="24" TextWrapping="Wrap" />
-                <SelectableTextBlock Classes="muted numbers" FontSize="12" Text="{Binding GlobalId}" ToolTip.Tip="IFC GlobalId" />
+                <StackPanel Orientation="Horizontal">
+                    <Button Classes="flat" Foreground="{StaticResource Plumb.TextMutedBrush}" Command="{Binding GlobalId.CopyCommand}"
+                            ToolTip.Tip="Copy GlobalId" AutomationProperties.Name="Copy GlobalId">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="numbers" FontSize="12" Text="{Binding GlobalId.Text}" VerticalAlignment="Center" />
+                            <controls:LucideIcon Data="{StaticResource Icon.Copy}" Size="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Classes="muted numbers" FontSize="12" Text="{Binding TagSuffix}" VerticalAlignment="Center" />
+                    <TextBlock Margin="10,0,0,0" FontSize="12" Text="{Binding GlobalId.Feedback}" IsVisible="{Binding GlobalId.HasFeedback}"
+                               Foreground="{StaticResource Plumb.AccentOnDarkBrush}" VerticalAlignment="Center" />
+                </StackPanel>
             </StackPanel>
         </Border>
         <TextBlock Margin="16" Classes="muted" Text="This element has no properties." IsVisible="{Binding !HasProperties}" />
@@ -17,7 +29,11 @@
                 <DataTemplate DataType="properties:PropertyGroupViewModel">
                     <Border Padding="16,12" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,1">
                         <StackPanel>
-                            <TextBlock Text="{Binding Name}" FontWeight="ExtraBold" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                                <TextBlock Text="{Binding Name}" FontWeight="ExtraBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted" FontSize="11" LetterSpacing="0.66"
+                                           Text="{Binding Source}" VerticalAlignment="Center" />
+                            </Grid>
                             <ItemsControl ItemsSource="{Binding Rows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="properties:PropertyRowViewModel">

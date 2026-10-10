@@ -38,9 +38,10 @@ public static class IfcModelReader
         var project = model.Instances.FirstOrDefault<IIfcProject>()
             ?? throw new IfcParseException("The file contains no IfcProject.");
 
-        var entries = SpatialStructureReader.Read(project, cancellationToken);
+        var units = ProjectUnits.From(project);
+        var entries = SpatialStructureReader.Read(project, units.LengthToMetres, cancellationToken);
 
-        var extractor = new PropertyExtractor(ProjectUnits.From(project));
+        var extractor = new PropertyExtractor(units);
         var properties = new List<PropertyRecord>();
         for (var i = 0; i < entries.Count; i++)
         {

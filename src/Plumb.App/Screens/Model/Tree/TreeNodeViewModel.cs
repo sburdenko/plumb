@@ -1,3 +1,4 @@
+using Plumb.App.Formatting;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Plumb.App.Shell;
@@ -52,7 +53,7 @@ public sealed partial class TreeNodeViewModel : ViewModelBase
     /// <summary>The subtitle with its leading gap, or empty; shown as a muted run after the title.</summary>
     public string SubtitleSuffix => Subtitle == null ? string.Empty : "  " + Subtitle;
 
-    /// <summary>Right-aligned number: elements in a storey or a type group.</summary>
+    /// <summary>Right-aligned: the element count of a storey or type group, or an element's tag.</summary>
     public string? Meta { get; }
 
     public double Indent { get; }
@@ -126,16 +127,18 @@ public sealed partial class TreeNodeViewModel : ViewModelBase
         _ => node.Label,
     };
 
-    private static string? SubtitleOf(ModelTreeNode node, TreeNodeKind kind) =>
-        kind is TreeNodeKind.Project or TreeNodeKind.Site or TreeNodeKind.Building
-        && node is ElementNode { Element.Name: { Length: > 0 } name }
-            ? $"\"{name}\""
-            : null;
+    private static string? SubtitleOf(ModelTreeNode node, TreeNodeKind kind) => (kind, node) switch
+    {
+        (TreeNodeKind.Project or TreeNodeKind.Site or TreeNodeKind.Building, ElementNode { Element.Name: { Length: > 0 } name }) => $"\"{name}\"",
+        (TreeNodeKind.Storey, ElementNode { Element.Elevation: { } elevation }) => Elevations.Format(elevation),
+        _ => null,
+    };
 
     private static string? MetaOf(ModelTreeNode node, TreeNodeKind kind) => kind switch
     {
         TreeNodeKind.TypeGroup => node.Children.Count.ToString(CultureInfo.InvariantCulture),
         TreeNodeKind.Storey => CountElements(node).ToString(CultureInfo.InvariantCulture),
+        TreeNodeKind.Element when node is ElementNode { Element.Tag: { } tag } => "#" + tag,
         _ => null,
     };
 

@@ -30,12 +30,12 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 
 ## Features
 
-- Opens IFC2X3 and IFC4 files by drag and drop or from a file dialog.
+- Opens IFC2X3 and IFC4 files by drag and drop, from a file dialog, or on macOS from Finder (Open With) and the Dock icon. The File menu and the Dock menu list recent models.
 - Starts on a list of recent models, newest first, with pinned ones on top. A model opens from its package unless the IFC file was saved since, and files that were moved or deleted are marked instead of silently dropped.
 - Shows the spatial structure: project, site, building and storeys sorted by elevation, with elements grouped by IFC type. Parts of aggregates, such as stair flights, appear under their parent element and keep its storey.
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.
-- Filters the tree by element name, IFC type or GlobalId.
+- Filters the tree by element name, IFC type, GlobalId or tag; ⌘F (Ctrl+F on Windows and Linux) jumps to the filter. A click on the GlobalId copies it.
 - Opens the package in a Unity viewer: orbit, pan and zoom, click an element to highlight it and see its name, type, storey and GlobalId, press F to frame it.
 - Converts the geometry to binary glTF (`model.glb`) with IfcOpenShell's IfcConvert. Every mesh node is named by its IFC GlobalId, so a 3D viewer can map a click back to the element and its properties.
 - Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely. When that folder is read-only, the model still opens and the app shows why it was not saved.
@@ -49,6 +49,12 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 | Open the saved package | ~15 ms |
 
 Measured on Apple Silicon with a Release build in a warm process.
+
+## Download
+
+Plumb for macOS on Apple Silicon is attached to each [release](https://github.com/sburdenko/plumb/releases) as `Plumb-<version>-macos-arm64.zip`, with IfcConvert and the Unity viewer inside. Unzip it and move `Plumb.app` to Applications.
+
+The app is not notarized by Apple, so the first launch is blocked. Open **System Settings → Privacy & Security** and choose **Open Anyway** next to the message about Plumb; macOS remembers the choice. Windows and Linux users build from source as described below.
 
 ## Architecture
 
@@ -124,16 +130,17 @@ Steps 3 and 4 read the same snapshot, so the model, the geometry and the manifes
 ```
 Duplex.plumb/
 |-- manifest.json   format version, source name and SHA-256, schema, element count, import time
-|-- model.sqlite    elements and properties tables, properties indexed by GlobalId
+|-- model.sqlite    elements (with tag and storey elevation in metres) and properties
+|                   (marked instance or type), properties indexed by GlobalId
 |-- elements.json   id, type, name and storey of every element, for viewers without SQLite
 '-- model.glb       binary glTF, one node per element, named by IFC GlobalId
 ```
 
-The manifest is written last, so a folder without one was never finished. Readers check its format version before touching the database. When geometry could not be built, the manifest records why, so a reopened package shows the same reason.
+The manifest is written last, so a folder without one was never finished. Readers check its format version before touching the database. A package in an earlier format is imported again from the IFC file next to it, which replaces the package; without that file, Plumb says which IFC file to open. When geometry could not be built, the manifest records why, so a reopened package shows the same reason.
 
 ### Design decisions
 
-- **Errors are values.** The pipeline returns `ImportResult.Success` or `ImportResult.Failure` with an `ImportError` code and never throws for expected failures. xBIM wraps exceptions thrown from its progress callback, so cancellation is detected from the token rather than the exception type.
+- **Errors are values.** The pipeline returns `ImportResult.Success`, `ImportResult.Failure` with an `ImportError` code, or `ImportResult.PackageOutdated`, and never throws for expected failures. xBIM wraps exceptions thrown from its progress callback, so cancellation is detected from the token rather than the exception type.
 - **Secondary steps are states, not errors.** A successful import carries `PackageState.Saved` or `NotSaved`, and a saved package carries `GeometryState.Built` or `NotBuilt`. The UI reads the warning from that state; nothing is a boolean flag.
 - **External tools run as separate processes.** IfcConvert (LGPL) is started per import with a time limit, its output is drained while it runs, and its whole process tree is killed on cancel or timeout.
 - **The GlobalId is the join key.** IfcConvert names every glTF node by GlobalId, the package indexes elements by GlobalId, and tests check that every node is an element. That is what lets a click in 3D find its data.
@@ -175,7 +182,7 @@ To get a standalone `Plumb.app` with its icon, IfcConvert and the viewer inside 
 tools/bundle-macos.sh
 ```
 
-It lands in `dist/` and runs without the .NET SDK installed.
+It lands in `dist/` together with the zip for a release, signed ad hoc, and runs without the .NET SDK installed.
 
 ## Tests
 
