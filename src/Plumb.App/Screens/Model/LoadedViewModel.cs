@@ -27,21 +27,21 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     private readonly ILookup<string, PropertyRecord> _propertiesByElement;
     private readonly IReadOnlyDictionary<string, ElementRecord> _elementsById;
     private readonly Dictionary<string, bool> _expansion = new(StringComparer.Ordinal);
-    private readonly IFileRevealer _revealer;
-    private readonly IViewerLauncher _viewer;
+    private readonly PlatformServices _platform;
+    private readonly TimeProvider _clock;
     private readonly PackageState _package;
     private Dictionary<string, TreeNodeViewModel> _storeys = new(StringComparer.Ordinal);
     private bool _rememberExpansion = true;
 
-    public LoadedViewModel(LoadedModel loaded, OpenCommands open, IFileRevealer revealer, IViewerLauncher viewer)
+    public LoadedViewModel(LoadedModel loaded, OpenCommands open, PlatformServices platform, TimeProvider clock)
     {
         var model = loaded.Result.Model;
         _tree = ModelTreeBuilder.Build(model.Elements);
         _propertiesByElement = model.Properties.ToLookup(p => p.GlobalId);
         _elementsById = model.Elements.ToDictionary(e => e.GlobalId);
         _package = loaded.Result.Package;
-        _revealer = revealer;
-        _viewer = viewer;
+        _platform = platform;
+        _clock = clock;
         Open = open;
 
         FileName = Path.GetFileName(Path.TrimEndingDirectorySeparator(loaded.OpenedPath));
@@ -94,7 +94,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     public bool CanOpenIn3D => _package is PackageState.Saved { Geometry: GeometryState.Built };
 
-    public string RevealLabel => _revealer.ActionLabel;
+    public string RevealLabel => _platform.Revealer.ActionLabel;
 
     [ObservableProperty]
     public partial string? Filter { get; set; }
@@ -121,7 +121,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     {
         if (_package is PackageState.Saved saved)
         {
-            ActionError = _viewer.TryOpen(saved.Path, out var error) ? null : error;
+            ActionError = _platform.Viewer.TryOpen(saved.Path, out var error) ? null : error;
         }
     }
 
@@ -130,7 +130,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     {
         if (_package is PackageState.Saved saved)
         {
-            ActionError = _revealer.TryReveal(saved.Path, out var error) ? null : error;
+            ActionError = _platform.Revealer.TryReveal(saved.Path, out var error) ? null : error;
         }
     }
 
@@ -148,7 +148,11 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     partial void OnSelectedNodeChanged(TreeNodeViewModel? value)
     {
         SelectedElement = value?.Element is { } element
-            ? new ElementDetailsViewModel(element, StoreyNameOf(element), _propertiesByElement[element.GlobalId])
+            ? new ElementDetailsViewModel(
+                element,
+                StoreyNameOf(element),
+                _propertiesByElement[element.GlobalId],
+                new CopyableTextViewModel(element.GlobalId, _platform.Clipboard, _clock))
             : null;
         MarkActiveStorey();
     }

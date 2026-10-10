@@ -66,7 +66,7 @@
                         <TextBlock Classes="caps" Text="SPATIAL STRUCTURE" />
                         <TextBlock Grid.Column="1" Classes="caps muted numbers" Text="{Binding ElementCount}" />
                     </Grid>
-                    <TextBox Classes="filter" PlaceholderText="Filter elements" Text="{Binding Filter}">
+                    <TextBox Name="FilterBox" Classes="filter" PlaceholderText="Filter elements" Text="{Binding Filter}">
                         <TextBox.KeyBindings>
                             <KeyBinding Gesture="Escape" Command="{Binding ClearFilterCommand}" />
                         </TextBox.KeyBindings>

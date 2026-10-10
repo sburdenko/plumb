@@ -7,11 +7,12 @@ public sealed class ElementDetailsViewModel : ViewModelBase
 {
     private const string NoValue = "—";
 
-    public ElementDetailsViewModel(ElementRecord element, string? storeyName, IEnumerable<PropertyRecord> properties)
+    /// <param name="globalId">The element's GlobalId, copied on click.</param>
+    public ElementDetailsViewModel(ElementRecord element, string? storeyName, IEnumerable<PropertyRecord> properties, CopyableTextViewModel globalId)
     {
         Title = string.IsNullOrWhiteSpace(element.Name) ? element.IfcType : element.Name;
         Kicker = element.IfcType.ToUpperInvariant();
-        GlobalId = element.GlobalId;
+        GlobalId = globalId;
         TagSuffix = element.Tag == null ? string.Empty : $" · #{element.Tag}";
         Storey = storeyName;
         Groups = properties
@@ -30,7 +31,7 @@ public sealed class ElementDetailsViewModel : ViewModelBase
 
     public string Title { get; }
 
-    public string GlobalId { get; }
+    public CopyableTextViewModel GlobalId { get; }
 
     /// <summary>" · #Tag" after the GlobalId, or empty when the element has no tag.</summary>
     public string TagSuffix { get; }

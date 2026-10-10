@@ -38,7 +38,11 @@ public sealed class MainWindowViewModelTests
         _viewer = new FakeViewerLauncher();
         _recent = new FakeRecentModelStore();
         _viewModel = new MainWindowViewModel(
-            _importService, _picker, _revealer, _viewer, _recent, TimeProvider.System, NullLogger<MainWindowViewModel>.Instance);
+            _importService,
+            new PlatformServices(_picker, _revealer, _viewer, new FakeClipboard()),
+            _recent,
+            TimeProvider.System,
+            NullLogger<MainWindowViewModel>.Instance);
     }
 
     [Test]

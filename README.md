@@ -35,7 +35,7 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Shows the spatial structure: project, site, building and storeys sorted by elevation, with elements grouped by IFC type. Parts of aggregates, such as stair flights, appear under their parent element and keep its storey.
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.
-- Filters the tree by element name, IFC type or GlobalId.
+- Filters the tree by element name, IFC type, GlobalId or tag; ⌘F (Ctrl+F on Windows and Linux) jumps to the filter. A click on the GlobalId copies it.
 - Opens the package in a Unity viewer: orbit, pan and zoom, click an element to highlight it and see its name, type, storey and GlobalId, press F to frame it.
 - Converts the geometry to binary glTF (`model.glb`) with IfcOpenShell's IfcConvert. Every mesh node is named by its IFC GlobalId, so a 3D viewer can map a click back to the element and its properties.
 - Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely. When that folder is read-only, the model still opens and the app shows why it was not saved.
