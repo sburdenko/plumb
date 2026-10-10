@@ -13,16 +13,19 @@ internal sealed class SpatialStructureReader
 {
     private readonly HashSet<string> _visited = [];
     private readonly List<SpatialEntry> _entries = [];
+    private readonly double _lengthToMetres;
     private readonly CancellationToken _cancellationToken;
 
-    private SpatialStructureReader(CancellationToken cancellationToken)
+    private SpatialStructureReader(double lengthToMetres, CancellationToken cancellationToken)
     {
+        _lengthToMetres = lengthToMetres;
         _cancellationToken = cancellationToken;
     }
 
-    public static IReadOnlyList<SpatialEntry> Read(IIfcProject project, CancellationToken cancellationToken)
+    /// <param name="lengthToMetres">Scales storey elevations from project units to metres.</param>
+    public static IReadOnlyList<SpatialEntry> Read(IIfcProject project, double lengthToMetres, CancellationToken cancellationToken)
     {
-        var reader = new SpatialStructureReader(cancellationToken);
+        var reader = new SpatialStructureReader(lengthToMetres, cancellationToken);
         reader.Visit(project, parentGlobalId: null, storeyGlobalId: null);
         return reader._entries;
     }
@@ -43,7 +46,9 @@ internal sealed class SpatialStructureReader
             definition.ExpressType.ExpressName,
             definition.Name?.ToString(),
             parentGlobalId,
-            ownStorey);
+            ownStorey,
+            TagOf(definition),
+            definition is IIfcBuildingStorey { Elevation: { } elevation } ? elevation * _lengthToMetres : null);
         _entries.Add(new SpatialEntry(record, definition));
 
         foreach (var child in ChildrenOf(definition))
@@ -64,6 +69,9 @@ internal sealed class SpatialStructureReader
 
         return parts.Concat(contained);
     }
+
+    private static string? TagOf(IIfcObjectDefinition definition) =>
+        definition is IIfcElement { Tag: { } tag } && !string.IsNullOrWhiteSpace(tag) ? tag.ToString() : null;
 
     private static double StoreyElevation(IIfcObjectDefinition definition) =>
         definition is IIfcBuildingStorey { Elevation: { } elevation } ? elevation : 0d;

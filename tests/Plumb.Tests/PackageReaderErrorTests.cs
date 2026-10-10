@@ -59,7 +59,7 @@ public sealed class PackageReaderErrorTests
     public void NewerFormatVersionIsAFormatError()
     {
         var path = Path.Combine(_package, PackageLayout.ManifestFile);
-        File.WriteAllText(path, File.ReadAllText(path).Replace("\"formatVersion\": 1", "\"formatVersion\": 99"));
+        File.WriteAllText(path, File.ReadAllText(path).Replace($"\"formatVersion\": {PackageLayout.FormatVersion}", "\"formatVersion\": 99"));
 
         Assert.That(
             () => PackageReader.Read(_package, CancellationToken.None),
