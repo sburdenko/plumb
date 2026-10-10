@@ -1,8 +1,8 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Plumb.App.Shell;
 using Plumb.Core.Model;
 using Plumb.Core.Tree;
-using Plumb.App.Shell;
 
 namespace Plumb.App.Screens.Model.Tree;
 
