@@ -15,8 +15,8 @@ public sealed class PresentationTests
         new("P", "IfcProject", "0001", null, null),
         new("S", "IfcSite", "Default", "P", null),
         new("B", "IfcBuilding", null, "S", null),
-        new("L1", "IfcBuildingStorey", "Level 1", "B", "L1"),
-        new("W1", "IfcWallStandardCase", "Basic Wall:Exterior - Brick:138062", "L1", "L1"),
+        new("L1", "IfcBuildingStorey", "Level 1", "B", "L1", Elevation: 3.1),
+        new("W1", "IfcWallStandardCase", "Basic Wall:Exterior - Brick:138062", "L1", "L1", Tag: "138062"),
         new("W2", "IfcWallStandardCase", "Basic Wall:Interior:138063", "L1", "L1"),
         new("ST", "IfcStair", "Stair", "L1", "L1"),
         new("SF", "IfcStairFlight", "Flight", "ST", "L1"),
@@ -40,6 +40,15 @@ public sealed class PresentationTests
         Assert.That(Durations.Format(TimeSpan.FromMilliseconds(milliseconds)), Is.EqualTo(expected));
     }
 
+    [TestCase(6.1, "+6.100")]
+    [TestCase(0d, "±0.000")]
+    [TestCase(-0.0004, "±0.000")]
+    [TestCase(-1.22, "\u22121.220")]
+    public void ElevationsAreMetresWithThreeDecimalsAndATrueMinus(double metres, string expected)
+    {
+        Assert.That(Elevations.Format(metres), Is.EqualTo(expected));
+    }
+
     [Test]
     public void TreeRowsFollowTheDesignPerLevel()
     {
@@ -53,9 +62,9 @@ public sealed class PresentationTests
         Assert.That((project.Title, project.Subtitle, project.Indent), Is.EqualTo(("IfcProject", "\"0001\"", 10d)));
         Assert.That((site.Title, site.Subtitle, site.Indent), Is.EqualTo(("IfcSite", "\"Default\"", 24d)));
         Assert.That((building.Title, building.Subtitle, building.Indent), Is.EqualTo(("IfcBuilding", (string?)null, 38d)));
-        Assert.That((storey.Title, storey.Meta, storey.Indent, storey.IsStrong), Is.EqualTo(("Level 1", "4", 52d, true)));
+        Assert.That((storey.Title, storey.Subtitle, storey.Meta, storey.Indent, storey.IsStrong), Is.EqualTo(("Level 1", "+3.100", "4", 52d, true)));
         Assert.That((walls.Meta, walls.Indent, walls.IsStrong), Is.EqualTo(("2", 66d, false)));
-        Assert.That((wall.Title, wall.Label, wall.Indent), Is.EqualTo(("Exterior - Brick:138062", "Basic Wall:Exterior - Brick:138062", 86d)));
+        Assert.That((wall.Title, wall.Label, wall.Meta, wall.Indent), Is.EqualTo(("Exterior - Brick:138062", "Basic Wall:Exterior - Brick:138062", "#138062", 86d)));
     }
 
     [Test]

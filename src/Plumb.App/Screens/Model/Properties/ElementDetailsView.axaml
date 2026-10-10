@@ -8,7 +8,10 @@
             <StackPanel Spacing="6">
                 <TextBlock Classes="kicker" Text="{Binding Kicker}" />
                 <SelectableTextBlock Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" LineHeight="24" TextWrapping="Wrap" />
-                <SelectableTextBlock Classes="muted numbers" FontSize="12" Text="{Binding GlobalId}" ToolTip.Tip="IFC GlobalId" />
+                <SelectableTextBlock Classes="muted numbers" FontSize="12">
+                    <Run Text="{Binding GlobalId}" />
+                    <Run Text="{Binding TagSuffix}" />
+                </SelectableTextBlock>
             </StackPanel>
         </Border>
         <TextBlock Margin="16" Classes="muted" Text="This element has no properties." IsVisible="{Binding !HasProperties}" />
@@ -17,7 +20,11 @@
                 <DataTemplate DataType="properties:PropertyGroupViewModel">
                     <Border Padding="16,12" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,1">
                         <StackPanel>
-                            <TextBlock Text="{Binding Name}" FontWeight="ExtraBold" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                                <TextBlock Text="{Binding Name}" FontWeight="ExtraBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Margin="10,0,0,0" Classes="muted" FontSize="11" LetterSpacing="0.66"
+                                           Text="{Binding Source}" VerticalAlignment="Center" />
+                            </Grid>
                             <ItemsControl ItemsSource="{Binding Rows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="properties:PropertyRowViewModel">
