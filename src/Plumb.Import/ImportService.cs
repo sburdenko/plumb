@@ -76,7 +76,16 @@ public sealed class ImportService : IImportService
         Task<ImportResult> Open()
         {
             progress.Report(new ImportProgress(ImportStep.OpeningPackage, 0));
-            var contents = PackageReader.Read(packagePath, cancellationToken);
+            PackageContents contents;
+            try
+            {
+                contents = PackageReader.Read(packagePath, cancellationToken);
+            }
+            catch (PackageOutdatedException ex)
+            {
+                return Task.FromResult<ImportResult>(Outdated(packagePath, ex));
+            }
+
             progress.Report(new ImportProgress(ImportStep.OpeningPackage, 100));
 
             var importDuration = TimeSpan.FromMilliseconds(contents.Manifest.ImportDurationMs);
@@ -286,8 +295,16 @@ public sealed class ImportService : IImportService
         }
     }
 
+    private static ImportResult.PackageOutdated Outdated(string packagePath, PackageOutdatedException outdated)
+    {
+        var folder = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(Path.GetFullPath(packagePath)));
+        var source = folder == null ? null : Path.Combine(folder, outdated.SourceFile);
+        return new ImportResult.PackageOutdated(outdated.SourceFile, source != null && File.Exists(source) ? source : null);
+    }
+
     private static string Describe(ImportResult result) => result switch
     {
+        ImportResult.PackageOutdated outdated => $"outdated format, source {outdated.SourcePath ?? $"{outdated.SourceFile} not found"}",
         ImportResult.Success success => $"{success.Model.Elements.Count} elements, {success.Model.Properties.Count} properties, {success.Package}",
         ImportResult.Failure failure => $"{failure.Error}: {failure.Message}",
         _ => throw new UnreachableException(),

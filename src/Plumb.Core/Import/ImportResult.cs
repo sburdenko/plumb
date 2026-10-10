@@ -4,7 +4,8 @@ using Plumb.Core.Model;
 namespace Plumb.Core.Import
 {
     /// <summary>
-    /// Outcome of an import: either <see cref="Success"/> or <see cref="Failure"/>.
+    /// Outcome of an import: <see cref="Success"/>, <see cref="Failure"/>, or <see cref="PackageOutdated"/> when a package
+    /// has to be imported again from its IFC file.
     /// </summary>
     public abstract record ImportResult
     {
@@ -17,5 +18,9 @@ namespace Plumb.Core.Import
         public sealed record Success(IfcModelData Model, TimeSpan ImportDuration, PackageState Package) : ImportResult;
 
         public sealed record Failure(ImportError Error, string Message) : ImportResult;
+
+        /// <param name="SourceFile">The IFC file name the package was made from.</param>
+        /// <param name="SourcePath">That file next to the package, or null when it is no longer there.</param>
+        public sealed record PackageOutdated(string SourceFile, string? SourcePath) : ImportResult;
     }
 }

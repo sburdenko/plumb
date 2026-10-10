@@ -86,6 +86,32 @@ public sealed class MainWindowViewModelTests
     }
 
     [Test]
+    public async Task AnOutdatedPackageIsImportedAgainFromItsIfcFile()
+    {
+        var ifc = Path.GetFullPath("/models/a.ifc");
+        _importService.Next = new ImportResult.PackageOutdated("a.ifc", ifc);
+        _importService.Next = Loaded;
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.plumb").WaitAsync(TestTimeout);
+
+        Assert.That(_importService.Calls.Select(call => (call.Method, call.Path)),
+            Is.EqualTo(new[] { ("open", "/models/a.plumb"), ("import", ifc) }));
+        Assert.That(_viewModel.CurrentState, Is.TypeOf<LoadedViewModel>());
+        Assert.That(((LoadedViewModel)_viewModel.CurrentState).FileName, Is.EqualTo("a.ifc"));
+    }
+
+    [Test]
+    public async Task AnOutdatedPackageWithoutItsIfcFileExplainsWhatToDo()
+    {
+        _importService.Next = new ImportResult.PackageOutdated("a.ifc", SourcePath: null);
+
+        await _viewModel.OpenPathCommand.ExecuteAsync("/models/a.plumb").WaitAsync(TestTimeout);
+
+        var failed = (FailedViewModel)_viewModel.CurrentState;
+        Assert.That(failed.Message, Does.Contain("earlier version of Plumb").And.Contain("a.ifc"));
+    }
+
+    [Test]
     public async Task IfcFileIsImportedIntoItsOwnFolder()
     {
         _importService.Next = Loaded;
@@ -355,8 +381,13 @@ public sealed class MainWindowViewModelTests
     private sealed class FakeImportService : IImportService
     {
         private readonly List<TaskCompletionSource<ImportResult>> _pending = [];
+        private readonly Queue<ImportResult> _queued = [];
 
-        public ImportResult? Next { get; set; }
+        /// <summary>Queues the result of the next call; calls with nothing queued wait for <see cref="Release"/>.</summary>
+        public ImportResult Next
+        {
+            set => _queued.Enqueue(value);
+        }
 
         public List<(string Method, string Path, string? OutputDirectory)> Calls { get; } = [];
 
@@ -380,9 +411,8 @@ public sealed class MainWindowViewModelTests
 
         private Task<ImportResult> Load(CancellationToken cancellationToken)
         {
-            if (Next is { } next)
+            if (_queued.TryDequeue(out var next))
             {
-                Next = null;
                 return Task.FromResult(next);
             }
 

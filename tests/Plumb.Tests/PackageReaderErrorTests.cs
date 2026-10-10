@@ -66,6 +66,17 @@ public sealed class PackageReaderErrorTests
             Throws.InstanceOf<PackageFormatException>().With.Message.Contains("99"));
     }
 
+    [Test]
+    public void AnOlderFormatVersionIsOutdatedAndNamesItsSource()
+    {
+        var path = Path.Combine(_package, PackageLayout.ManifestFile);
+        File.WriteAllText(path, File.ReadAllText(path).Replace($"\"formatVersion\": {PackageLayout.FormatVersion}", "\"formatVersion\": 1"));
+
+        Assert.That(
+            () => PackageReader.Read(_package, CancellationToken.None),
+            Throws.InstanceOf<PackageOutdatedException>().With.Property(nameof(PackageOutdatedException.SourceFile)).Not.Empty);
+    }
+
     [TestCase("sourceFile")]
     [TestCase("ifcSchema")]
     [TestCase("elementCount")]

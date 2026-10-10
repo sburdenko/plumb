@@ -10,6 +10,7 @@ public static class PackageReader
 {
     /// <exception cref="DirectoryNotFoundException">The folder does not exist.</exception>
     /// <exception cref="PackageFormatException">The folder is not a readable package.</exception>
+    /// <exception cref="PackageOutdatedException">The package was written in an earlier format.</exception>
     public static PackageContents Read(string directory, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(directory))
@@ -50,10 +51,13 @@ public static class PackageReader
             throw new PackageFormatException($"{PackageLayout.ManifestFile} is not valid: {ex.Message}", ex);
         }
 
-        return manifest.FormatVersion == PackageLayout.FormatVersion
-            ? manifest
-            : throw new PackageFormatException(
-                $"Package format {manifest.FormatVersion} is not supported; expected {PackageLayout.FormatVersion}.");
+        return manifest.FormatVersion switch
+        {
+            PackageLayout.FormatVersion => manifest,
+            < PackageLayout.FormatVersion => throw new PackageOutdatedException(manifest.FormatVersion, manifest.SourceFile),
+            _ => throw new PackageFormatException(
+                $"Package format {manifest.FormatVersion} is newer than this version of Plumb reads ({PackageLayout.FormatVersion})."),
+        };
     }
 
     private static (IReadOnlyList<ElementRecord>, IReadOnlyList<PropertyRecord>) ReadDatabase(

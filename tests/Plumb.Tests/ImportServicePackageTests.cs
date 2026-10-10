@@ -291,6 +291,35 @@ public sealed class ImportServicePackageTests
         Assert.That(((ImportResult.Failure)result).Error, Is.EqualTo(ImportError.PackageInvalid));
     }
 
+    [Test]
+    public async Task AnOlderPackageIsOutdatedAndPointsToItsIfcFile()
+    {
+        await ImportAsync();
+        MarkAsFormatVersion1();
+
+        var result = await _service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);
+
+        Assert.That(result, Is.EqualTo(new ImportResult.PackageOutdated("Duplex.ifc", _ifc)));
+    }
+
+    [Test]
+    public async Task AnOlderPackageWhoseIfcFileIsGoneHasNoSourcePath()
+    {
+        await ImportAsync();
+        MarkAsFormatVersion1();
+        File.Delete(_ifc);
+
+        var result = await _service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);
+
+        Assert.That(result, Is.EqualTo(new ImportResult.PackageOutdated("Duplex.ifc", SourcePath: null)));
+    }
+
+    private void MarkAsFormatVersion1()
+    {
+        var manifest = Path.Combine(_package, PackageLayout.ManifestFile);
+        File.WriteAllText(manifest, File.ReadAllText(manifest).Replace($"\"formatVersion\": {PackageLayout.FormatVersion}", "\"formatVersion\": 1"));
+    }
+
     private async Task<ImportResult.Success> ImportAsync()
     {
         var result = await _service.RunAsync(_ifc, _temp.Path, _noProgress, CancellationToken.None);

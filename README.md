@@ -130,11 +130,11 @@ Duplex.plumb/
 '-- model.glb       binary glTF, one node per element, named by IFC GlobalId
 ```
 
-The manifest is written last, so a folder without one was never finished. Readers check its format version before touching the database. When geometry could not be built, the manifest records why, so a reopened package shows the same reason.
+The manifest is written last, so a folder without one was never finished. Readers check its format version before touching the database. A package in an earlier format is imported again from the IFC file next to it, which replaces the package; without that file, Plumb says which IFC file to open. When geometry could not be built, the manifest records why, so a reopened package shows the same reason.
 
 ### Design decisions
 
-- **Errors are values.** The pipeline returns `ImportResult.Success` or `ImportResult.Failure` with an `ImportError` code and never throws for expected failures. xBIM wraps exceptions thrown from its progress callback, so cancellation is detected from the token rather than the exception type.
+- **Errors are values.** The pipeline returns `ImportResult.Success`, `ImportResult.Failure` with an `ImportError` code, or `ImportResult.PackageOutdated`, and never throws for expected failures. xBIM wraps exceptions thrown from its progress callback, so cancellation is detected from the token rather than the exception type.
 - **Secondary steps are states, not errors.** A successful import carries `PackageState.Saved` or `NotSaved`, and a saved package carries `GeometryState.Built` or `NotBuilt`. The UI reads the warning from that state; nothing is a boolean flag.
 - **External tools run as separate processes.** IfcConvert (LGPL) is started per import with a time limit, its output is drained while it runs, and its whole process tree is killed on cancel or timeout.
 - **The GlobalId is the join key.** IfcConvert names every glTF node by GlobalId, the package indexes elements by GlobalId, and tests check that every node is an element. That is what lets a click in 3D find its data.

@@ -62,7 +62,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private Task OpenPackageAsync() => PickAndOpenAsync(_filePicker.PickPackageAsync);
 
     /// <summary>
-    /// Opens a <c>.plumb</c> package as is, or imports anything else as an IFC file.
+    /// Opens a <c>.plumb</c> package as is, or imports anything else as an IFC file. A package in an earlier format
+    /// is imported again from the IFC file next to it, which replaces the package.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanOpenPath))]
     private async Task OpenPathAsync(string? path)
@@ -82,6 +83,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var clock = Stopwatch.StartNew();
             var result = await LoadAsync(path, new Progress<ImportProgress>(importing.Report), cancellation.Token);
+            if (result is ImportResult.PackageOutdated { SourcePath: { } source })
+            {
+                _logger.LogInformation("{Package} has an earlier format; importing {Source} again", path, source);
+                CurrentState = previous;
+                await OpenPathAsync(source);
+                return;
+            }
+
             CurrentState = NextState(result, previous, path, opensPackage, clock.Elapsed);
         }
         catch (Exception ex)
@@ -131,8 +140,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 ? previous
                 : Empty(errorMessage: null),
             ImportResult.Failure failure => new FailedViewModel(path, failure.Message, _open),
+            ImportResult.PackageOutdated outdated => new FailedViewModel(path, OutdatedMessage(path, outdated.SourceFile), _open),
             _ => throw new UnreachableException(),
         };
+
+    private static string OutdatedMessage(string packagePath, string sourceFile) =>
+        $"{Path.GetFileName(Path.TrimEndingDirectorySeparator(packagePath))} was saved by an earlier version of Plumb. "
+        + $"Open {sourceFile} to build it again; it is not next to the package.";
 
     private LoadedViewModel Loaded(LoadedModel model)
     {
