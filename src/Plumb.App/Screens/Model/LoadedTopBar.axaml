@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:model="using:Plumb.App.Screens.Model"
+             x:Class="Plumb.App.Screens.Model.LoadedTopBar"
+             x:DataType="model:LoadedViewModel">
+    <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <TextBlock Classes="muted" Text="{Binding ProjectName}" IsVisible="{Binding HasProjectName}" VerticalAlignment="Center" />
+            <TextBlock Classes="muted" Text="/" IsVisible="{Binding HasProjectName}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Border BorderBrush="{StaticResource Plumb.BorderBrush}" BorderThickness="1" Padding="7,1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Schema}" FontSize="11" Foreground="{StaticResource Plumb.TextSoftBrush}" />
+            </Border>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Classes="secondary" Content="Open Package…" Command="{Binding Open.OpenPackage}" />
+            <Button Classes="primary" Content="Open IFC…" Command="{Binding Open.OpenIfc}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

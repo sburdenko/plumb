@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:model="using:Plumb.App.Screens.Model"
+             xmlns:controls="using:Plumb.App.Controls"
+             x:Class="Plumb.App.Screens.Model.LoadedStatusBar"
+             x:DataType="model:LoadedViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.segment">
+            <Setter Property="Padding" Value="14,0" />
+            <Setter Property="BorderBrush" Value="{StaticResource Plumb.RuleBrush}" />
+        </Style>
+    </UserControl.Styles>
+    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+        <Border Classes="segment" BorderThickness="0,0,1,0">
+            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <TextBlock Text="{Binding LoadLabel}" />
+                <TextBlock Classes="numbers" Text="{Binding LoadTime}" FontWeight="Bold" Foreground="{StaticResource Plumb.TextBrush}" />
+            </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="segment" BorderThickness="0,0,1,0">
+            <TextBlock Classes="numbers" Text="{Binding Counts}" VerticalAlignment="Center" />
+        </Border>
+        <ItemsControl Grid.Column="3" ItemsSource="{Binding StatusItems}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="model:StatusItemViewModel">
+                    <Border Classes="segment" BorderThickness="1,0,0,0" Height="26">
+                        <Panel VerticalAlignment="Center">
+                            <Button Classes="flat" IsVisible="{Binding IsProblem}" ToolTip.Tip="Show why">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <controls:LucideIcon Data="{StaticResource Icon.TriangleAlert}" Size="12" VerticalAlignment="Center"
+                                                         Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                                    <TextBlock Text="{Binding Text}" FontWeight="SemiBold" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <Flyout Placement="TopEdgeAlignedRight">
+                                        <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" FontSize="13" />
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Classes="flat" IsVisible="{Binding IsAction}" Command="{Binding Action}"
+                                    ToolTip.Tip="Show the package in the file manager">
+                                <TextBlock Text="{Binding Text}" />
+                            </Button>
+                            <TextBlock Text="{Binding Text}" IsVisible="{Binding IsPlain}" />
+                        </Panel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</UserControl>

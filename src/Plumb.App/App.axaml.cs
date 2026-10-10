@@ -4,15 +4,13 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
-using Plumb.App.Logging;
-using Plumb.App.Platform;
-using Plumb.App.Recent;
-using Plumb.App.Services;
-using Plumb.App.ViewModels;
-using Plumb.App.Views;
 using Plumb.Import;
 using Plumb.Geometry;
 using Plumb.Ifc;
+using Plumb.App.Logging;
+using Plumb.App.Platform;
+using Plumb.App.Screens.Start.Recent;
+using Plumb.App.Shell;
 
 namespace Plumb.App;
 
