@@ -11,7 +11,7 @@ public sealed class ElementDetailsTests
     [Test]
     public void TheTagIsShownAfterTheGlobalId()
     {
-        Assert.That((Details(Wall).GlobalId, Details(Wall).TagSuffix), Is.EqualTo(("W1", " · #139117")));
+        Assert.That((Details(Wall).GlobalId.Text, Details(Wall).TagSuffix), Is.EqualTo(("W1", " · #139117")));
         Assert.That(Details(Wall with { Tag = null }).TagSuffix, Is.Empty);
     }
 
@@ -34,5 +34,5 @@ public sealed class ElementDetailsTests
     }
 
     private static ElementDetailsViewModel Details(ElementRecord element, params PropertyRecord[] properties) =>
-        new(element, "Level 1", properties);
+        new(element, "Level 1", properties, new CopyableTextViewModel(element.GlobalId, new FakeClipboard(), TimeProvider.System));
 }

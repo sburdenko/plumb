@@ -19,29 +19,25 @@ namespace Plumb.App.Shell;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IImportService _importService;
-    private readonly IFilePickerService _filePicker;
-    private readonly IFileRevealer _revealer;
-    private readonly IViewerLauncher _viewer;
+    private readonly PlatformServices _platform;
+    private readonly TimeProvider _clock;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly OpenCommands _open;
     private readonly RecentModelsViewModel _recent;
 
     public MainWindowViewModel(
         IImportService importService,
-        IFilePickerService filePicker,
-        IFileRevealer revealer,
-        IViewerLauncher viewer,
+        PlatformServices platform,
         IRecentModelStore recentModels,
         TimeProvider clock,
         ILogger<MainWindowViewModel> logger)
     {
         _importService = importService;
-        _filePicker = filePicker;
-        _revealer = revealer;
-        _viewer = viewer;
+        _platform = platform;
+        _clock = clock;
         _logger = logger;
         _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand, OpenPathCommand);
-        _recent = new RecentModelsViewModel(recentModels, OpenPathCommand, revealer, clock);
+        _recent = new RecentModelsViewModel(recentModels, OpenPathCommand, platform.Revealer, clock);
         CurrentState = Empty(errorMessage: null);
     }
 
@@ -56,10 +52,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool CanOpenPath(string? path) => CanStartLoading() && !string.IsNullOrWhiteSpace(path);
 
     [RelayCommand(CanExecute = nameof(CanStartLoading))]
-    private Task OpenIfcAsync() => PickAndOpenAsync(_filePicker.PickIfcFileAsync);
+    private Task OpenIfcAsync() => PickAndOpenAsync(_platform.FilePicker.PickIfcFileAsync);
 
     [RelayCommand(CanExecute = nameof(CanStartLoading))]
-    private Task OpenPackageAsync() => PickAndOpenAsync(_filePicker.PickPackageAsync);
+    private Task OpenPackageAsync() => PickAndOpenAsync(_platform.FilePicker.PickPackageAsync);
 
     /// <summary>
     /// Opens a <c>.plumb</c> package as is, or imports anything else as an IFC file. A package in an earlier format
@@ -151,7 +147,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private LoadedViewModel Loaded(LoadedModel model)
     {
         _recent.Record(model);
-        return new LoadedViewModel(model, _open, _revealer, _viewer);
+        return new LoadedViewModel(model, _open, _platform, _clock);
     }
 
     private EmptyStateViewModel Empty(string? errorMessage)

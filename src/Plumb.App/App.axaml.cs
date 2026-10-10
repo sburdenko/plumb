@@ -37,9 +37,11 @@ public sealed partial class App : Application
                 new ImportService(
                     loggerFactory.CreateLogger<ImportService>(),
                     new IfcConvertRunner(IfcConvertRunner.DefaultExecutablePath, GeometryTimeout, loggerFactory.CreateLogger<IfcConvertRunner>())),
-                new StorageFilePickerService(window),
-                new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
-                new ViewerLauncher(loggerFactory.CreateLogger<ViewerLauncher>()),
+                new PlatformServices(
+                    new StorageFilePickerService(window),
+                    new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
+                    new ViewerLauncher(loggerFactory.CreateLogger<ViewerLauncher>()),
+                    new WindowClipboard(window, loggerFactory.CreateLogger<WindowClipboard>())),
                 new RecentModelFileStore(RecentModelFileStore.DefaultPath, loggerFactory.CreateLogger<RecentModelFileStore>()),
                 TimeProvider.System,
                 loggerFactory.CreateLogger<MainWindowViewModel>());

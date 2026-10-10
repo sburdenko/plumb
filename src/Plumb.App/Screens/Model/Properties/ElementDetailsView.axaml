@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:properties="using:Plumb.App.Screens.Model.Properties"
+             xmlns:controls="using:Plumb.App.Controls"
              x:Class="Plumb.App.Screens.Model.Properties.ElementDetailsView"
              x:DataType="properties:ElementDetailsViewModel">
     <StackPanel>
@@ -8,10 +9,18 @@
             <StackPanel Spacing="6">
                 <TextBlock Classes="kicker" Text="{Binding Kicker}" />
                 <SelectableTextBlock Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" LineHeight="24" TextWrapping="Wrap" />
-                <SelectableTextBlock Classes="muted numbers" FontSize="12">
-                    <Run Text="{Binding GlobalId}" />
-                    <Run Text="{Binding TagSuffix}" />
-                </SelectableTextBlock>
+                <StackPanel Orientation="Horizontal">
+                    <Button Classes="flat" Foreground="{StaticResource Plumb.TextMutedBrush}" Command="{Binding GlobalId.CopyCommand}"
+                            ToolTip.Tip="Copy GlobalId" AutomationProperties.Name="Copy GlobalId">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Classes="numbers" FontSize="12" Text="{Binding GlobalId.Text}" VerticalAlignment="Center" />
+                            <controls:LucideIcon Data="{StaticResource Icon.Copy}" Size="12" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Classes="muted numbers" FontSize="12" Text="{Binding TagSuffix}" VerticalAlignment="Center" />
+                    <TextBlock Margin="10,0,0,0" FontSize="12" Text="{Binding GlobalId.Feedback}" IsVisible="{Binding GlobalId.HasFeedback}"
+                               Foreground="{StaticResource Plumb.AccentOnDarkBrush}" VerticalAlignment="Center" />
+                </StackPanel>
             </StackPanel>
         </Border>
         <TextBlock Margin="16" Classes="muted" Text="This element has no properties." IsVisible="{Binding !HasProperties}" />
