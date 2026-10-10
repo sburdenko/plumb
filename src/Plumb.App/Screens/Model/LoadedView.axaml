@@ -22,10 +22,11 @@
         <Style Selector="TextBlock.meta">
             <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
         </Style>
-        <Style Selector="TreeViewItem:selected /template/ ContentPresenter#PART_HeaderPresenter TextBlock">
+        <!-- The row's text comes from a data template, not the item's template, so the row carries the selection itself. -->
+        <Style Selector="Grid.row.selected TextBlock">
             <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
         </Style>
-        <Style Selector="TreeViewItem:selected /template/ ContentPresenter#PART_HeaderPresenter TextBlock.title">
+        <Style Selector="Grid.row.selected TextBlock.title">
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <!-- Viewport segmented control -->
@@ -77,7 +78,8 @@
                           ItemContainerTheme="{StaticResource Plumb.TreeItem}">
                     <TreeView.ItemTemplate>
                         <TreeDataTemplate DataType="tree:TreeNodeViewModel" ItemsSource="{Binding Children}">
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Label}" Background="Transparent">
+                            <Grid Classes="row" Classes.selected="{Binding $parent[TreeViewItem].IsSelected}"
+                                  ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Label}" Background="Transparent">
                                 <TextBlock Classes="title" Classes.strong="{Binding IsStrong}" Classes.active="{Binding IsActiveStorey}">
                                     <Run Text="{Binding Title}" />
                                     <Run Text="{Binding SubtitleSuffix}" FontWeight="Normal" Foreground="{StaticResource Plumb.TextMutedBrush}" />
