@@ -27,12 +27,16 @@ internal sealed class PropertyExtractor
         }
 
         var globalId = ifcObject.GlobalId.ToString();
-        var instanceSets = ifcObject.IsDefinedBy.SelectMany(rel => Expand(rel.RelatingPropertyDefinition));
-        var typeSets = ifcObject.IsTypedBy.SelectMany(rel => rel.RelatingType.HasPropertySets);
-
-        return instanceSets
-            .Concat(typeSets)
+        var instanceRecords = ifcObject.IsDefinedBy
+            .SelectMany(rel => Expand(rel.RelatingPropertyDefinition))
+            .SelectMany(set => ReadSet(globalId, set));
+        var typeRecords = ifcObject.IsTypedBy
+            .SelectMany(rel => rel.RelatingType.HasPropertySets)
             .SelectMany(set => ReadSet(globalId, set))
+            .Select(record => record with { Source = PropertySource.Type });
+
+        return instanceRecords
+            .Concat(typeRecords)
             .DistinctBy(record => (record.Pset, record.Name));
     }
 

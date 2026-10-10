@@ -53,6 +53,34 @@ public sealed class ImportServiceDuplexTests
     }
 
     [Test]
+    public void StoreysCarryTheirElevationInMetres()
+    {
+        var elevations = _model.Elements
+            .Where(e => e.IfcType == "IfcBuildingStorey")
+            .ToDictionary(e => e.Name!, e => e.Elevation);
+
+        Assert.That(elevations["T/FDN"], Is.EqualTo(-1.25).Within(1e-9));
+        Assert.That(elevations["Level 1"], Is.EqualTo(0).Within(1e-9));
+        Assert.That(elevations["Level 2"], Is.EqualTo(3.1).Within(1e-9));
+        Assert.That(elevations["Roof"], Is.EqualTo(6.0).Within(1e-9));
+    }
+
+    [Test]
+    public void OnlyStoreysHaveAnElevation()
+    {
+        Assert.That(_model.Elements.Where(e => e.IfcType != "IfcBuildingStorey").Select(e => e.Elevation), Has.All.Null);
+    }
+
+    [Test]
+    public void ElementsCarryTheirTag()
+    {
+        var wall = _model.Elements.Single(e => e.GlobalId == "2O2Fr$t4X7Zf8NOew3FNqI");
+
+        Assert.That(wall.Tag, Is.EqualTo("138157"));
+        Assert.That(_model.Elements[0].Tag, Is.Null);
+    }
+
+    [Test]
     public void TreeShowsStoreysWithWallGroups()
     {
         var project = (ElementNode)ModelTreeBuilder.Build(_model.Elements).Single();

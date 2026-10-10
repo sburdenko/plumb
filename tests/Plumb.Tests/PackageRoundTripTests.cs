@@ -16,15 +16,15 @@ public sealed class PackageRoundTripTests
         [
             new ElementRecord("P", "IfcProject", "Project", null, null),
             new ElementRecord("B", "IfcBuilding", null, "P", null),
-            new ElementRecord("L1", "IfcBuildingStorey", "Level 1", "B", "L1"),
-            new ElementRecord("W1", "IfcWall", "Wall 'A'", "L1", "L1"),
+            new ElementRecord("L1", "IfcBuildingStorey", "Level 1", "B", "L1", Elevation: -1.25),
+            new ElementRecord("W1", "IfcWall", "Wall 'A'", "L1", "L1", Tag: "138157"),
             new ElementRecord("ST", "IfcStair", "Stair", "L1", "L1"),
             new ElementRecord("SF", "IfcStairFlight", "Flight", "ST", "L1"),
         ],
         [
             new PropertyRecord("W1", "Pset_WallCommon", "IsExternal", "true", null),
             new PropertyRecord("W1", "Qto_WallBaseQuantities", "NetSideArea", "13.6", "m²"),
-            new PropertyRecord("W1", "Pset_WallCommon", "FireRating", null, null),
+            new PropertyRecord("W1", "Pset_WallCommon", "FireRating", null, null, PropertySource.Type),
             new PropertyRecord("ST", "Pset_StairCommon", "NumberOfRiser", "16", null),
         ]);
 

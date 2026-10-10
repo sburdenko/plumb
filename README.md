@@ -124,7 +124,8 @@ Steps 3 and 4 read the same snapshot, so the model, the geometry and the manifes
 ```
 Duplex.plumb/
 |-- manifest.json   format version, source name and SHA-256, schema, element count, import time
-|-- model.sqlite    elements and properties tables, properties indexed by GlobalId
+|-- model.sqlite    elements (with tag and storey elevation in metres) and properties
+|                   (marked instance or type), properties indexed by GlobalId
 |-- elements.json   id, type, name and storey of every element, for viewers without SQLite
 '-- model.glb       binary glTF, one node per element, named by IFC GlobalId
 ```

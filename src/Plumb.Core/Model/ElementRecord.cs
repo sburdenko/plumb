@@ -9,10 +9,14 @@ namespace Plumb.Core.Model
     /// <param name="StoreyGlobalId">
     /// Nearest storey. A storey points to itself; objects above storeys (project, site, building) have null.
     /// </param>
+    /// <param name="Tag">The authoring tool's own id, such as a Revit element id; null when the file has none.</param>
+    /// <param name="Elevation">A storey's elevation in metres; null for everything else.</param>
     public sealed record ElementRecord(
         string GlobalId,
         string IfcType,
         string? Name,
         string? ParentGlobalId,
-        string? StoreyGlobalId);
+        string? StoreyGlobalId,
+        string? Tag = null,
+        double? Elevation = null);
 }

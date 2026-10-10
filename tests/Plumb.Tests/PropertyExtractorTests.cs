@@ -61,7 +61,15 @@ public sealed class PropertyExtractorTests
     {
         var acoustic = _records.Single(r => r.Name == "AcousticRating");
 
-        Assert.That(acoustic, Is.EqualTo(new PropertyRecord(WallId, "Pset_WallCommon", "AcousticRating", "45 dB", null)));
+        Assert.That(acoustic, Is.EqualTo(new PropertyRecord(WallId, "Pset_WallCommon", "AcousticRating", "45 dB", null, PropertySource.Type)));
+    }
+
+    [Test]
+    public void AnInstanceValueKeepsItsSourceWhenItOverridesTheType()
+    {
+        var fireRating = _records.Single(r => r.Name == "FireRating");
+
+        Assert.That(fireRating.Source, Is.EqualTo(PropertySource.Instance));
     }
 
     private static IfcPropertySet PropertySet(MemoryModel model, string globalId, string name, params (string Name, string Value)[] properties) =>
