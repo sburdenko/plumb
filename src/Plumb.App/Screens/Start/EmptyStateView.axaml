@@ -1,0 +1,43 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Plumb.App.Controls"
+             xmlns:recent="using:Plumb.App.Screens.Start.Recent"
+             xmlns:start="using:Plumb.App.Screens.Start"
+             x:Class="Plumb.App.Screens.Start.EmptyStateView"
+             x:DataType="start:EmptyStateViewModel">
+    <Panel Background="{StaticResource Plumb.InkBrush}">
+        <Border Name="DropFrame" BorderBrush="Transparent" BorderThickness="2" />
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="96,88,96,48" RowDefinitions="Auto,Auto">
+                <!-- The list takes the free width up to 760 px; the last column absorbs the rest so it stays left-aligned. -->
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="20*" MaxWidth="760" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.ColumnSpan="4">
+                    <controls:PlumbMark Width="48" Height="48" HorizontalAlignment="Left" />
+                    <Panel Margin="0,24,0,0">
+                        <TextBlock Name="OpenHeading" Text="Open a building model" FontSize="42" FontWeight="ExtraBold" LetterSpacing="-0.84" />
+                        <TextBlock Name="ReleaseHeading" Text="Release to open" FontSize="42" FontWeight="ExtraBold" LetterSpacing="-0.84" IsVisible="False" />
+                    </Panel>
+                    <TextBlock Margin="0,12,0,0" Classes="muted" FontSize="15" TextWrapping="Wrap"
+                               Text="Drop an .ifc or .plumb file here, or open one from disk. IFC2X3 and IFC4." />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,48,0,0">
+                    <TextBlock Classes="caps muted" Text="START" Margin="0,0,0,12" />
+                    <StackPanel Spacing="8">
+                        <Button Classes="primary" HorizontalAlignment="Stretch" Content="Open IFC…" Command="{Binding Open.OpenIfc}" />
+                        <Button Classes="secondary" HorizontalAlignment="Stretch" Content="Open Package…" Command="{Binding Open.OpenPackage}" />
+                    </StackPanel>
+                    <TextBlock Margin="0,16,0,0" Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}"
+                               TextWrapping="Wrap" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                </StackPanel>
+
+                <recent:RecentModelsView Grid.Row="1" Grid.Column="2" Margin="0,48,0,0" DataContext="{Binding Recent}" />
+            </Grid>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

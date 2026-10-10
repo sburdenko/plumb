@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="using:Plumb.App.Controls"
-                    xmlns:vm="using:Plumb.App.ViewModels">
+                    xmlns:tree="using:Plumb.App.Screens.Model.Tree">
 
   <!-- Chevron slot of a tree row: right when collapsed, down when expanded. -->
   <ControlTheme x:Key="Plumb.TreeChevron" TargetType="ToggleButton">
@@ -23,11 +23,11 @@
   </ControlTheme>
 
   <!-- A 28px tree row. Indentation comes from the row's level; selection fills the whole row in accent. -->
-  <ControlTheme x:Key="Plumb.TreeItem" TargetType="TreeViewItem" x:DataType="vm:TreeNodeViewModel">
+  <ControlTheme x:Key="Plumb.TreeItem" TargetType="TreeViewItem" x:DataType="tree:TreeNodeViewModel">
     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="Template">
-      <ControlTemplate x:DataType="vm:TreeNodeViewModel">
+      <ControlTemplate x:DataType="tree:TreeNodeViewModel">
         <StackPanel>
           <Border Name="PART_Header" Height="28" Background="Transparent">
             <Grid ColumnDefinitions="Auto,14,6,*">

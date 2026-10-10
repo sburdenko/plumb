@@ -1,4 +1,4 @@
-using Plumb.App.ViewModels;
+using Plumb.App.Screens.Model.Viewport;
 using Plumb.Core.Geometry;
 
 namespace Plumb.Tests;

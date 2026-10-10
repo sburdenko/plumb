@@ -1,0 +1,223 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:model="using:Plumb.App.Screens.Model"
+             xmlns:properties="using:Plumb.App.Screens.Model.Properties"
+             xmlns:tree="using:Plumb.App.Screens.Model.Tree"
+             xmlns:viewport="using:Plumb.App.Screens.Model.Viewport"
+             xmlns:controls="using:Plumb.App.Controls"
+             x:Class="Plumb.App.Screens.Model.LoadedView"
+             x:DataType="model:LoadedViewModel">
+    <UserControl.Styles>
+        <!-- Tree row text -->
+        <Style Selector="TextBlock.title">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextTreeBrush}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+        <Style Selector="TextBlock.title.strong">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.title.active">
+            <Setter Property="FontWeight" Value="ExtraBold" />
+        </Style>
+        <Style Selector="TextBlock.meta">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+        </Style>
+        <Style Selector="TreeViewItem:selected /template/ ContentPresenter#PART_HeaderPresenter TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+        </Style>
+        <Style Selector="TreeViewItem:selected /template/ ContentPresenter#PART_HeaderPresenter TextBlock.title">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- Viewport segmented control -->
+        <Style Selector="Border.segment">
+            <Setter Property="Padding" Value="12,7" />
+        </Style>
+        <Style Selector="Border.segment.active">
+            <Setter Property="Background" Value="{StaticResource Plumb.AccentBrush}" />
+        </Style>
+        <Style Selector="Border.segment TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextSoftBrush}" />
+        </Style>
+        <Style Selector="Border.segment.active TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+        </Style>
+        <Style Selector="Border.segment.unavailable">
+            <Setter Property="Opacity" Value="0.45" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="52,300,*,380">
+        <!-- Icon rail -->
+        <Border Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,2,0">
+            <StackPanel Margin="0,8,0,0" Spacing="4">
+                <Grid Height="44" ToolTip.Tip="Model">
+                    <Rectangle Width="3" HorizontalAlignment="Left" Fill="{StaticResource Plumb.AccentBrush}" />
+                    <controls:LucideIcon Data="{StaticResource Icon.ListTree}" Size="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Spatial tree -->
+        <Border Grid.Column="1" Background="{StaticResource Plumb.InkBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,2,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Margin="14,14,14,10" Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="caps" Text="SPATIAL STRUCTURE" />
+                        <TextBlock Grid.Column="1" Classes="caps muted numbers" Text="{Binding ElementCount}" />
+                    </Grid>
+                    <TextBox Classes="filter" PlaceholderText="Filter elements" Text="{Binding Filter}">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Escape" Command="{Binding ClearFilterCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+                </StackPanel>
+                <TreeView ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ItemsSource="{Binding Nodes}"
+                          SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
+                          ItemContainerTheme="{StaticResource Plumb.TreeItem}">
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate DataType="tree:TreeNodeViewModel" ItemsSource="{Binding Children}">
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Label}" Background="Transparent">
+                                <TextBlock Classes="title" Classes.strong="{Binding IsStrong}" Classes.active="{Binding IsActiveStorey}">
+                                    <Run Text="{Binding Title}" />
+                                    <Run Text="{Binding SubtitleSuffix}" FontWeight="Normal" Foreground="{StaticResource Plumb.TextMutedBrush}" />
+                                </TextBlock>
+                                <TextBlock Grid.Column="1" Classes="meta numbers" Text="{Binding Meta}" Margin="6,0,12,0" />
+                            </Grid>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </DockPanel>
+        </Border>
+
+        <!-- Viewport -->
+        <Grid Grid.Column="2" RowDefinitions="44,*" Background="{StaticResource Plumb.InkBrush}">
+            <Border BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,1" Padding="14,0">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border BorderBrush="{StaticResource Plumb.BorderBrush}" BorderThickness="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Classes="segment active"><TextBlock Text="3D" /></Border>
+                            <Rectangle Width="1" Fill="{StaticResource Plumb.BorderBrush}" />
+                            <Border Classes="segment unavailable" ToolTip.Tip="Not available yet"><TextBlock Text="Plan" /></Border>
+                            <Rectangle Width="1" Fill="{StaticResource Plumb.BorderBrush}" />
+                            <Border Classes="segment unavailable" ToolTip.Tip="Not available yet"><TextBlock Text="Section" /></Border>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Grid.Column="2" Classes="muted numbers" FontSize="12" VerticalAlignment="Center" Text="{Binding Viewport.GeometryInfo}" />
+                </Grid>
+            </Border>
+
+            <Panel Grid.Row="1" Background="{StaticResource Plumb.GridBrush}">
+                <StackPanel Margin="48,120,48,0" HorizontalAlignment="Left" VerticalAlignment="Top" Spacing="16">
+                    <ContentControl Content="{Binding Viewport}">
+                        <ContentControl.DataTemplates>
+                            <DataTemplate DataType="viewport:ViewportReadyViewModel">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="3D view" FontSize="20" FontWeight="ExtraBold" />
+                                    <TextBlock Classes="muted numbers" Text="{Binding Detail}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,18,0,0">
+                                        <Button Classes="primary" Command="{Binding OpenIn3D}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <controls:LucideIcon Data="{StaticResource Icon.Box}" Size="16" VerticalAlignment="Center" />
+                                                <TextBlock Text="Open in Unity viewer" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate DataType="viewport:ViewportGeometryMissingViewModel">
+                                <StackPanel MaxWidth="460" Spacing="0">
+                                    <Rectangle Height="4" Fill="{StaticResource Plumb.AccentBrush}" />
+                                    <controls:LucideIcon Margin="0,16,0,0" HorizontalAlignment="Left" Data="{StaticResource Icon.TriangleAlert}"
+                                                         Size="28" Foreground="{StaticResource Plumb.AccentBrush}" />
+                                    <TextBlock Margin="0,12,0,0" Text="3D geometry was not built" FontSize="22" FontWeight="ExtraBold" />
+                                    <TextBlock Margin="0,8,0,0" Classes="dim" FontSize="14" TextWrapping="Wrap" Text="{Binding Reason}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
+                                        <Button Classes="primary" Content="Re-import with geometry" IsVisible="{Binding CanReimport}"
+                                                Command="{Binding OpenPath}" CommandParameter="{Binding SourcePath}" />
+                                        <Button Classes="secondary" Content="Details" IsVisible="{Binding HasDetail}">
+                                            <Button.Flyout>
+                                                <Flyout Placement="BottomEdgeAlignedLeft">
+                                                    <SelectableTextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="13" />
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate DataType="viewport:ViewportNotSavedViewModel">
+                                <StackPanel MaxWidth="460">
+                                    <Rectangle Height="4" Fill="{StaticResource Plumb.AccentBrush}" />
+                                    <controls:LucideIcon Margin="0,16,0,0" HorizontalAlignment="Left" Data="{StaticResource Icon.TriangleAlert}"
+                                                         Size="28" Foreground="{StaticResource Plumb.AccentBrush}" />
+                                    <TextBlock Margin="0,12,0,0" Text="Package not saved" FontSize="22" FontWeight="ExtraBold" />
+                                    <TextBlock Margin="0,8,0,0" Classes="dim" FontSize="14" TextWrapping="Wrap" Text="{Binding Reason}" />
+                                    <TextBlock Margin="0,8,0,0" Classes="dim" FontSize="14" TextWrapping="Wrap"
+                                               Text="The tree and properties are open and complete; 3D needs a saved package." />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ContentControl.DataTemplates>
+                    </ContentControl>
+                    <TextBlock Text="{Binding ActionError}" IsVisible="{Binding ActionError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                               Foreground="{StaticResource Plumb.AccentOnDarkBrush}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left" />
+                </StackPanel>
+
+                <!-- Selection badge -->
+                <Grid ColumnDefinitions="3,Auto" Margin="14,0,0,12" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                      IsVisible="{Binding HasSelection}">
+                    <Rectangle Fill="{StaticResource Plumb.AccentBrush}" />
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
+                        <TextBlock Text="SELECTED" FontSize="10" LetterSpacing="1.2" FontWeight="SemiBold" Classes="muted" />
+                        <TextBlock Text="{Binding SelectedName}" FontSize="14" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Grid>
+            </Panel>
+        </Grid>
+
+        <!-- Properties -->
+        <Border Grid.Column="3" Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="2,0,0,0">
+            <Panel>
+                <StackPanel Margin="16" Spacing="6" IsVisible="{Binding SelectedElement, Converter={x:Static ObjectConverters.IsNull}}">
+                    <TextBlock Text="No element selected" FontSize="16" FontWeight="ExtraBold" />
+                    <TextBlock Classes="muted" Text="Select an element in the tree or the 3D view." TextWrapping="Wrap" />
+                </StackPanel>
+                <ScrollViewer DataContext="{Binding SelectedElement}" IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel x:DataType="properties:ElementDetailsViewModel">
+                        <Border Padding="16" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,2">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="{Binding Kicker}" />
+                                <SelectableTextBlock Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" LineHeight="24" TextWrapping="Wrap" />
+                                <SelectableTextBlock Classes="muted numbers" FontSize="12" Text="{Binding GlobalId}" ToolTip.Tip="IFC GlobalId" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Margin="16" Classes="muted" Text="This element has no properties." IsVisible="{Binding !HasProperties}" />
+                        <ItemsControl ItemsSource="{Binding Groups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="properties:PropertyGroupViewModel">
+                                    <Border Padding="16,12" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,1">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontWeight="ExtraBold" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
+                                            <ItemsControl ItemsSource="{Binding Rows}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="properties:PropertyRowViewModel">
+                                                        <Grid ColumnDefinitions="*,10,*" Margin="0,4">
+                                                            <TextBlock Classes="muted" Text="{Binding Key}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Key}" />
+                                                            <TextBlock Grid.Column="2" Classes="numbers" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FullValue}">
+                                                                <Run Text="{Binding Value}" FontWeight="SemiBold" />
+                                                                <Run Text="{Binding UnitSuffix}" Foreground="{StaticResource Plumb.TextMutedBrush}" />
+                                                            </TextBlock>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Panel>
+        </Border>
+    </Grid>
+</UserControl>

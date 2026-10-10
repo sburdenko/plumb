@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Plumb.App.Controls"
+        xmlns:failed="using:Plumb.App.Screens.Failed"
+        xmlns:importing="using:Plumb.App.Screens.Importing"
+        xmlns:model="using:Plumb.App.Screens.Model"
+        xmlns:shell="using:Plumb.App.Shell"
+        xmlns:start="using:Plumb.App.Screens.Start"
+        x:Class="Plumb.App.Shell.MainWindow"
+        x:DataType="shell:MainWindowViewModel"
+        Title="Plumb"
+        Icon="/Assets/plumb.ico"
+        Width="1440" Height="900"
+        MinWidth="1100" MinHeight="680"
+        shell:FileDrop.Command="{Binding OpenPathCommand}">
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenIfcCommand}" />
+        <KeyBinding Gesture="Meta+O" Command="{Binding OpenIfcCommand}" />
+    </Window.KeyBindings>
+
+    <Window.Styles>
+        <!-- While a file is dragged over the window, the empty state frames itself and changes its heading. -->
+        <Style Selector="Window.dragover Border#DropFrame">
+            <Setter Property="BorderBrush" Value="{StaticResource Plumb.AccentBrush}" />
+        </Style>
+        <Style Selector="Window.dragover TextBlock#OpenHeading">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="Window.dragover TextBlock#ReleaseHeading">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="48,*,28">
+        <Border Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,0,2">
+            <Grid ColumnDefinitions="Auto,*" Margin="14,0">
+                <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                    <controls:PlumbMark Width="22" Height="22" />
+                    <TextBlock Text="Plumb" FontSize="18" FontWeight="ExtraBold" LetterSpacing="-0.54" VerticalAlignment="Center" />
+                </StackPanel>
+                <ContentControl Grid.Column="1" Margin="24,0,0,0" Content="{Binding CurrentState}">
+                    <ContentControl.DataTemplates>
+                        <DataTemplate DataType="model:LoadedViewModel"><model:LoadedTopBar /></DataTemplate>
+                        <DataTemplate DataType="shell:ScreenViewModel"><Panel /></DataTemplate>
+                    </ContentControl.DataTemplates>
+                </ContentControl>
+            </Grid>
+        </Border>
+
+        <ContentControl Grid.Row="1" Content="{Binding CurrentState}">
+            <ContentControl.DataTemplates>
+                <DataTemplate DataType="start:EmptyStateViewModel"><start:EmptyStateView /></DataTemplate>
+                <DataTemplate DataType="importing:ImportingViewModel"><importing:ImportingView /></DataTemplate>
+                <DataTemplate DataType="failed:FailedViewModel"><failed:FailedView /></DataTemplate>
+                <DataTemplate DataType="model:LoadedViewModel"><model:LoadedView /></DataTemplate>
+            </ContentControl.DataTemplates>
+        </ContentControl>
+
+        <Border Grid.Row="2" Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,2,0,0">
+            <ContentControl Content="{Binding CurrentState}" TextElement.FontSize="12" TextElement.Foreground="{StaticResource Plumb.TextDimBrush}">
+                <ContentControl.DataTemplates>
+                    <DataTemplate DataType="model:LoadedViewModel"><model:LoadedStatusBar /></DataTemplate>
+                    <DataTemplate DataType="importing:ImportingViewModel">
+                        <TextBlock Margin="14,0" VerticalAlignment="Center" Text="{Binding FileName, StringFormat='Working on {0}…'}" />
+                    </DataTemplate>
+                    <DataTemplate DataType="failed:FailedViewModel">
+                        <TextBlock Margin="14,0" VerticalAlignment="Center" Text="Import failed" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                    </DataTemplate>
+                    <DataTemplate DataType="start:EmptyStateViewModel">
+                        <TextBlock Margin="14,0" VerticalAlignment="Center" Text="No model open" />
+                    </DataTemplate>
+                </ContentControl.DataTemplates>
+            </ContentControl>
+        </Border>
+    </Grid>
+</Window>
