@@ -14,7 +14,7 @@ namespace Plumb.App.ViewModels;
 /// <summary>
 /// The loaded model: spatial tree with filter, selected element, viewport state and status bar.
 /// </summary>
-public sealed partial class LoadedViewModel : ViewModelBase
+public sealed partial class LoadedViewModel : ScreenViewModel
 {
     private const int MaxNodesToExpandOnFilter = 300;
 

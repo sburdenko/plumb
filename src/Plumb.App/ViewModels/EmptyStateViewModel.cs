@@ -1,7 +1,7 @@
 namespace Plumb.App.ViewModels;
 
 /// <summary>The start screen: open buttons, the last error if any, and the recent models.</summary>
-public sealed class EmptyStateViewModel(OpenCommands open, string? errorMessage, RecentModelsViewModel recent) : ViewModelBase
+public sealed class EmptyStateViewModel(OpenCommands open, string? errorMessage, RecentModelsViewModel recent) : ScreenViewModel
 {
     public OpenCommands Open { get; } = open;
 

@@ -39,7 +39,7 @@
                 <ContentControl Grid.Column="1" Margin="24,0,0,0" Content="{Binding CurrentState}">
                     <ContentControl.DataTemplates>
                         <DataTemplate DataType="vm:LoadedViewModel"><views:LoadedTopBar /></DataTemplate>
-                        <DataTemplate DataType="vm:ViewModelBase"><Panel /></DataTemplate>
+                        <DataTemplate DataType="vm:ScreenViewModel"><Panel /></DataTemplate>
                     </ContentControl.DataTemplates>
                 </ContentControl>
             </Grid>
