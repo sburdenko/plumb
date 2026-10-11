@@ -17,7 +17,6 @@ namespace Plumb.App;
 
 public sealed partial class App : Application
 {
-    private static readonly TimeSpan GeometryTimeout = TimeSpan.FromMinutes(10);
     private static readonly Uri DockIcon = new("avares://Plumb.App/Assets/plumb-dock.png");
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
@@ -37,7 +36,7 @@ public sealed partial class App : Application
             var viewModel = new MainWindowViewModel(
                 new ImportService(
                     loggerFactory.CreateLogger<ImportService>(),
-                    new IfcConvertRunner(IfcConvertRunner.DefaultExecutablePath, GeometryTimeout, loggerFactory.CreateLogger<IfcConvertRunner>())),
+                    new IfcConvertRunner(IfcConvertRunner.DefaultExecutablePath, IfcConvertRunner.DefaultTimeout, loggerFactory.CreateLogger<IfcConvertRunner>())),
                 new PlatformServices(
                     new StorageFilePickerService(window),
                     new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),

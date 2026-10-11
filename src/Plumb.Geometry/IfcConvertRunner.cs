@@ -11,6 +11,9 @@ namespace Plumb.Geometry;
 /// </summary>
 public sealed partial class IfcConvertRunner(string executablePath, TimeSpan timeout, ILogger<IfcConvertRunner> logger) : IGeometryConverter
 {
+    /// <summary>How long Plumb lets IfcConvert run before it gives up on geometry and opens the model without it.</summary>
+    public static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(10);
+
     private static readonly TimeSpan KillGracePeriod = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan OutputGracePeriod = TimeSpan.FromSeconds(5);
 
