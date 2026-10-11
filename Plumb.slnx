@@ -7,6 +7,9 @@
     <Project Path="src/Plumb.Import/Plumb.Import.csproj" />
     <Project Path="src/Plumb.Package/Plumb.Package.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Plumb.Bench/Plumb.Bench.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Plumb.Tests/Plumb.Tests.csproj" />
   </Folder>

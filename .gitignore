@@ -12,3 +12,4 @@ samples/*.download
 tools/ifcconvert/
 viewer-build/
 dist/
+samples/large/
