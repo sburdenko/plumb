@@ -39,6 +39,12 @@ namespace Plumb.Viewer
             _lastPointer = Input.mousePosition;
         }
 
+        /// <summary>Turns the camera around the pivot, as a drag to the side would.</summary>
+        public void Turn(float degrees)
+        {
+            _yaw += degrees;
+        }
+
         public void Frame(Bounds bounds)
         {
             _pivot = bounds.center;
