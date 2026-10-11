@@ -42,10 +42,6 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Imports in the background, showing each step of the pipeline with its time, and can be cancelled at any point. A cancelled or failed import never leaves a half-written package behind.
 - Keeps the model when a secondary step fails: if the package cannot be saved, or IfcConvert is missing, fails or times out, the tree and properties still open and the app shows why.
 
-## macOS app
-
-`tools/bundle-macos.sh` builds `dist/Plumb.app` for Apple Silicon, with IfcConvert and the Unity viewer inside, and a zip of it (see [Getting started](#getting-started) for what it needs). The app is signed ad hoc, not notarized by Apple: when it was copied from another Mac, the first launch is blocked until you choose **Open Anyway** in **System Settings → Privacy & Security**.
-
 ## Performance
 
 Measured on a MacBook Pro with Apple M2 Pro and 32 GB of memory, Release builds. Each import is a fresh process, so peak memory belongs to that model alone.
@@ -206,7 +202,7 @@ To get a standalone `Plumb.app` with its icon, IfcConvert and the viewer inside 
 tools/bundle-macos.sh
 ```
 
-It lands in `dist/` together with a zip of it, signed ad hoc, and runs without the .NET SDK installed.
+It lands in `dist/` and runs without the .NET SDK installed.
 
 ## Tests
 
