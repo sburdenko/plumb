@@ -16,6 +16,9 @@ rm -rf "$bundle"
 mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
 cp -R "$publish"/. "$bundle/Contents/MacOS/"
 cp "$root/packaging/macos/Info.plist" "$bundle/Contents/"
+# The version lives in Directory.Build.props; the bundle takes it from there.
+version="$(dotnet msbuild "$root/src/Plumb.App" -getProperty:Version)"
+/usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $version" -c "Add :CFBundleVersion string $version" "$bundle/Contents/Info.plist"
 cp "$root/packaging/macos/Plumb.icns" "$bundle/Contents/Resources/"
 plutil -lint "$bundle/Contents/Info.plist" >/dev/null
 
@@ -24,7 +27,6 @@ plutil -lint "$bundle/Contents/Info.plist" >/dev/null
 codesign --force --deep --sign - "$bundle"
 codesign --verify --deep --strict "$bundle"
 
-version="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$bundle/Contents/Info.plist")"
 archive="$root/dist/Plumb-${version}-macos-arm64.zip"
 rm -f "$archive"
 ditto -c -k --keepParent "$bundle" "$archive"
