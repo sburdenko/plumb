@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/sburdenko/plumb/actions/workflows/ci.yml/badge.svg)](https://github.com/sburdenko/plumb/actions/workflows/ci.yml)
 
-Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial structure and the properties of every element, keep the result as a `.plumb` package that reopens in milliseconds, and inspect it in 3D: click any element to see what it is.
+Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial structure and the properties of every element, keep the result as a `.plumb` package that reopens without parsing the IFC again, and inspect it in 3D: click any element to see what it is.
 
 ```
               ________________________
@@ -42,19 +42,45 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Imports in the background, showing each step of the pipeline with its time, and can be cancelled at any point. A cancelled or failed import never leaves a half-written package behind.
 - Keeps the model when a secondary step fails: if the package cannot be saved, or IfcConvert is missing, fails or times out, the tree and properties still open and the app shows why.
 
-| Duplex sample: 2.4 MB, 246 elements, 12,713 property values | Time |
-|---|---|
-| Import from IFC, including geometry | ~1.2 s |
-| IfcConvert alone, running alongside the IFC read | ~1.15 s |
-| Open the saved package | ~15 ms |
-
-Measured on Apple Silicon with a Release build in a warm process.
-
 ## Download
 
 Plumb for macOS on Apple Silicon is attached to each [release](https://github.com/sburdenko/plumb/releases) as `Plumb-<version>-macos-arm64.zip`, with IfcConvert and the Unity viewer inside. Unzip it and move `Plumb.app` to Applications.
 
 The app is not notarized by Apple, so the first launch is blocked. Open **System Settings → Privacy & Security** and choose **Open Anyway** next to the message about Plumb; macOS remembers the choice. Windows and Linux users build from source as described below.
+
+## Performance
+
+Measured on a MacBook Pro with Apple M2 Pro and 32 GB of memory, Release builds. Each import is a fresh process, so peak memory belongs to that model alone.
+
+| Model | Schema | IFC | Elements | Property values | Import | `model.glb` | Open package | Peak memory, Plumb / IfcConvert |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Duplex | IFC2X3 | 2.4 MB | 246 | 12,713 | 1.2 s | 1.0 MB | 15 ms | 0.1 / 0.1 GB |
+| Revit architecture sample | IFC4 | 13.6 MB | 466 | 3,032 | 15–19 s | 14.1 MB | 7 ms | 0.2 / 2.4 GB |
+| Autodesk 210 King, office | IFC2X3 | 155 MB | 11,937 | 354,945 | 4.0–4.6 min | 114 MB | 0.4 s | 1.1 / 1.8 GB |
+| NBU Medical Clinic, MEP | IFC2X3 | 207 MB | 16,545 | 1,094,781 | 3.0 min | 74 MB | 1.2 s | 1.5 / 1.2 GB |
+| NVW DCR LOD300, architecture | IFC2X3 | 288 MB | 7,531 | 6,639 | 2.3 min | 108 MB | 34 ms | 1.7 / 2.1 GB |
+
+The Unity viewer on the same packages, in a 1280×800 window with vsync off, while the camera turns around the model:
+
+| Model | Model read | Shown | Clickable | Average FPS | 1% low FPS | Meshes | Triangles |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Duplex | 0.2 s | 0.2 s | 0.2 s | 2,147 | 385 | 215 | 26 k |
+| Revit architecture sample | 0.2 s | 0.2 s | 0.3 s | 1,278 | 143 | 446 | 362 k |
+| Autodesk 210 King | 0.7 s | 0.8 s | 2.4 s | 59 | 53 | 12,673 | 4.1 M |
+| NBU Medical Clinic, MEP | 0.6 s | 0.7 s | 1.8 s | 54 | 47 | 16,012 | 4.7 M |
+| NVW DCR LOD300 | 0.6 s | 0.6 s | 1.4 s | 107 | 99 | 7,354 | 1.5 M |
+
+- **Geometry is the slow part of an import.** IfcConvert alone takes 226 s of 210 King's import and 105 s of NVW's 139 s; reading the IFC runs alongside it.
+- **Opening a package scales with property values, not file size.** The clinic's million values take 1.2 s; the 288 MB architecture model, with few properties, opens in 34 ms.
+- **Clicking costs a little after the model appears.** Mesh colliders, which make elements clickable, are added 5 ms per frame after the model is shown, so the camera moves meanwhile. On 12,000 to 16,000 meshes that adds 1 to 2 s.
+- The first run of IfcConvert from a new folder takes a few seconds longer while macOS checks the binary.
+
+The large models come from the [DURAARK dataset](https://tib.eu/data/duraark/BuildingData/) at TIB Hannover and from [youshengCode/IfcSampleFiles](https://github.com/youshengCode/IfcSampleFiles). They are not in the repository. To measure a model of your own:
+
+```bash
+dotnet run -c Release --project tools/Plumb.Bench -- path/to/model.ifc
+"viewer-build/PlumbViewer.app/Contents/MacOS/Plumb Viewer" --package path/to/model.plumb --benchmark result.txt
+```
 
 ## Architecture
 
