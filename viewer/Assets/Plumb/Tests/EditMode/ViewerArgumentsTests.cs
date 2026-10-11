@@ -29,6 +29,16 @@ namespace Plumb.Viewer.Tests
         }
 
         [Test]
+        public void ReadsTheBenchmarkReport()
+        {
+            var arguments = ViewerArguments.Parse(new[] { "viewer", "--package", "/m/a.plumb", "--benchmark", "/tmp/bench.txt" });
+
+            Assert.That(arguments.RunsBenchmark, Is.True);
+            Assert.That(arguments.BenchmarkPath, Is.EqualTo("/tmp/bench.txt"));
+            Assert.That(ViewerArguments.Parse(new[] { "viewer" }).RunsBenchmark, Is.False);
+        }
+
+        [Test]
         public void ReadsSelectionAndScreenshot()
         {
             var arguments = ViewerArguments.Parse(new[] { "viewer", "--select", "2O2Fr$t4X7Zf8NOew3FNtn", "--screenshot", "/tmp/shot.png" });

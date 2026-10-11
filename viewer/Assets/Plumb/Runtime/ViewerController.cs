@@ -17,6 +17,7 @@ namespace Plumb.Viewer
         private const int FramesBeforeScreenshot = 5;
         private const int FramesBeforeQuit = 5;
         private const double ColliderBudgetMilliseconds = 5;
+        private const float BenchmarkDegreesPerSecond = 30f;
 
         private readonly ClickGesture _click = new ClickGesture();
         private readonly SelectionHighlight _highlight = new SelectionHighlight();
@@ -36,6 +37,9 @@ namespace Plumb.Viewer
         private int _screenshotCountdown = -1;
         private int _quitCountdown = -1;
 
+        // Set only with --benchmark; null in normal use.
+        private BenchmarkRecorder _benchmark;
+
         private enum ViewerState
         {
             NoPackage,
@@ -54,8 +58,18 @@ namespace Plumb.Viewer
             StartLoading();
         }
 
+        private static double Now => Time.realtimeSinceStartupAsDouble;
+
         private void StartLoading()
         {
+            if (_arguments.RunsBenchmark)
+            {
+                // Uncapped, so the frame rate shows what the model costs rather than the display's refresh rate.
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = -1;
+                _benchmark = new BenchmarkRecorder(Now);
+            }
+
             if (!_arguments.HasPackage)
             {
                 Finish(ViewerState.NoPackage, "No package. In Plumb, open a model and choose Open in 3D.");
@@ -107,6 +121,7 @@ namespace Plumb.Viewer
                 case ViewerState.Ready:
                     BuildColliders();
                     HandleInput();
+                    AdvanceBenchmark();
                     break;
             }
 
@@ -126,6 +141,7 @@ namespace Plumb.Viewer
                 return;
             }
 
+            _benchmark?.ModelRead(Now);
             _model = new GameObject("Model").transform;
             _pending = _import.InstantiateMainSceneAsync(_model);
             _state = ViewerState.BuildingScene;
@@ -144,7 +160,12 @@ namespace Plumb.Viewer
                 return;
             }
 
+            _benchmark?.SceneShown(Now);
             _colliders = new ColliderBuilder(_model.GetComponentsInChildren<MeshFilter>());
+            if (_colliders.Done)
+            {
+                _benchmark?.CollidersReady(Now);
+            }
             if (RendererBounds.TryEncapsulate(_model.GetComponentsInChildren<Renderer>(), out var scene))
             {
                 _orbit.SetScene(scene);
@@ -164,10 +185,68 @@ namespace Plumb.Viewer
 
             _colliders.Advance(ColliderBudgetMilliseconds);
             _message = _colliders.Done ? null : $"Preparing selection… {_colliders.Progress:P0}";
+            if (_colliders.Done)
+            {
+                _benchmark?.CollidersReady(Now);
+            }
+
             if (_colliders.Done && _arguments.TakesScreenshot)
             {
                 _screenshotCountdown = FramesBeforeScreenshot;
             }
+        }
+
+        /// <summary>Once every element is clickable, turns the camera and samples frames until the run is complete.</summary>
+        private void AdvanceBenchmark()
+        {
+            if (_benchmark == null || !_colliders.Done)
+            {
+                return;
+            }
+
+            _orbit.Turn(BenchmarkDegreesPerSecond * Time.unscaledDeltaTime);
+            if (_benchmark.AddFrame(Time.unscaledDeltaTime))
+            {
+                var (meshes, triangles) = CountGeometry();
+                EndBenchmark(_benchmark.Report(meshes, triangles));
+            }
+        }
+
+        private (int Meshes, long Triangles) CountGeometry()
+        {
+            var meshes = 0;
+            var indices = 0L;
+            foreach (var filter in _model.GetComponentsInChildren<MeshFilter>())
+            {
+                var mesh = filter.sharedMesh;
+                if (mesh == null)
+                {
+                    continue;
+                }
+
+                meshes++;
+                for (var sub = 0; sub < mesh.subMeshCount; sub++)
+                {
+                    indices += mesh.GetIndexCount(sub);
+                }
+            }
+
+            return (meshes, indices / 3);
+        }
+
+        private void EndBenchmark(string result)
+        {
+            try
+            {
+                File.WriteAllText(_arguments.BenchmarkPath, result + Environment.NewLine);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Debug.LogError($"Cannot write the benchmark to {_arguments.BenchmarkPath}: {ex.Message}");
+            }
+
+            _benchmark = null;
+            _quitCountdown = FramesBeforeQuit;
         }
 
         private void HandleInput()
@@ -267,6 +346,11 @@ namespace Plumb.Viewer
             _state = state;
             _message = message;
             _orbit.Enabled = state == ViewerState.Ready;
+
+            if (_benchmark != null && state != ViewerState.Ready)
+            {
+                EndBenchmark($"| failed: {message} |");
+            }
 
             // A ready viewer is captured once every element is clickable; see BuildColliders.
             if (_arguments.TakesScreenshot && state != ViewerState.Ready)
