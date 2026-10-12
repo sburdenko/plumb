@@ -78,7 +78,7 @@ dotnet run -c Release --project tools/Plumb.Bench -- path/to/model.ifc
 
 ## Architecture
 
-Every project does one job and references only what that job needs. Each box depends only on the boxes below it.
+Every project does one job and references only what that job needs. Each box depends only on the boxes below it. `ArchitectureTests` checks these edges on every build. For a plain-language tour and a glossary, see [docs/architecture.md](docs/architecture.md); for every automated test written out as a sentence, [docs/scenarios.md](docs/scenarios.md).
 
 ```
                             ┌───────────────────────┐
