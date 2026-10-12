@@ -56,6 +56,29 @@ public sealed class ArchitectureTests
             AssertDoesNotReference(other, "Microsoft.Data.Sqlite");
     }
 
+    [Test]
+    public void Core_names_outcomes_as_states_not_as_boolean_flags()
+    {
+        var flags = PublicInstanceProperties(Core).Where(property => property.PropertyType == typeof(bool));
+        Assert.That(flags.Select(Describe), Is.Empty, "model a yes/no outcome as a state type with a reason instead");
+    }
+
+    [Test]
+    public void Core_values_cannot_change_after_construction()
+    {
+        var mutable = PublicInstanceProperties(Core).Where(IsMutable);
+        Assert.That(mutable.Select(Describe), Is.Empty, "Core records are read-only; use init or a constructor");
+    }
+
+    private static IEnumerable<PropertyInfo> PublicInstanceProperties(Assembly assembly) =>
+        assembly.GetExportedTypes().SelectMany(type => type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+
+    private static bool IsMutable(PropertyInfo property) =>
+        property.SetMethod is { IsPublic: true } setter
+        && !setter.ReturnParameter.GetRequiredCustomModifiers().Any(modifier => modifier.Name == "IsExternalInit");
+
+    private static string Describe(PropertyInfo property) => $"{property.DeclaringType?.Name}.{property.Name}";
+
     private static void AssertNoPlumbReferences(Assembly assembly) =>
         Assert.That(PlumbReferences(assembly), Is.Empty, $"{assembly.GetName().Name} must not depend on other Plumb assemblies");
 
