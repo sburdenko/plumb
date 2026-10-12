@@ -30,6 +30,21 @@ public sealed class ImportService : IImportService
         _geometry = geometry;
     }
 
+    /// <summary>
+    /// The production pipeline: xBIM logging routed into <paramref name="loggerFactory"/> and IfcConvert
+    /// found at its default location.
+    /// </summary>
+    public static ImportService CreateDefault(ILoggerFactory loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        XbimSetup.Configure(loggerFactory);
+        var converter = new IfcConvertRunner(
+            IfcConvertRunner.DefaultExecutablePath,
+            IfcConvertRunner.DefaultTimeout,
+            loggerFactory.CreateLogger<IfcConvertRunner>());
+        return new ImportService(loggerFactory.CreateLogger<ImportService>(), converter);
+    }
+
     /// <inheritdoc />
     public async Task<ImportResult> RunAsync(
         string ifcPath,
@@ -179,7 +194,7 @@ public sealed class ImportService : IImportService
             progress.Report(new ImportProgress(ImportStep.Finalizing, WriteEnd));
             draft.Publish();
             progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
-            return new PackageState.Saved(packagePath, geometry);
+            return new PackageState.Saved(packagePath, PackageReader.GeometryOf(packagePath, manifest));
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {

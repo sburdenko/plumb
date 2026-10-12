@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
 
-namespace Plumb.Geometry;
+namespace Plumb.Package;
 
 public static class GlbInfo
 {

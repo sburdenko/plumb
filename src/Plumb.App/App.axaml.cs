@@ -10,8 +10,6 @@ using Plumb.App.Platform;
 using Plumb.App.Screens.Start.Recent;
 using Plumb.App.Shell;
 using Plumb.Import;
-using Plumb.Geometry;
-using Plumb.Ifc;
 
 namespace Plumb.App;
 
@@ -29,14 +27,11 @@ public sealed partial class App : Application
             var logger = loggerFactory.CreateLogger<App>();
             AppDomain.CurrentDomain.UnhandledException += (_, e) =>
                 logger.LogCritical(e.ExceptionObject as Exception, "Unhandled exception");
-            XbimSetup.Configure(loggerFactory);
             SetDockIcon(logger);
 
             var window = new MainWindow();
             var viewModel = new MainWindowViewModel(
-                new ImportService(
-                    loggerFactory.CreateLogger<ImportService>(),
-                    new IfcConvertRunner(IfcConvertRunner.DefaultExecutablePath, IfcConvertRunner.DefaultTimeout, loggerFactory.CreateLogger<IfcConvertRunner>())),
+                ImportService.CreateDefault(loggerFactory),
                 new PlatformServices(
                     new StorageFilePickerService(window),
                     new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),

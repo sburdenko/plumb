@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Plumb.App.Platform;
 using Plumb.App.Screens.Model;
 using Plumb.App.Screens.Model.Tree;
@@ -8,7 +7,6 @@ using Plumb.App.Shell;
 using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
-using Plumb.Geometry;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Plumb.Tests;
@@ -112,37 +110,12 @@ public sealed class LoadedViewModelTests
         Assert.That(Storey(loaded, "Level 1").IsExpanded, Is.False);
     }
 
-    [Test]
-    public void GlbNodesAreCountedFromTheJsonChunk()
-    {
-        using var temp = new TempDirectory();
-        var path = Path.Combine(temp.Path, "model.glb");
-        File.WriteAllBytes(path, Glb("""{"asset":{"version":"2.0"},"nodes":[{"name":"A"},{"name":"B"},{"name":"C"}]}"""));
-
-        Assert.That(GlbInfo.CountNodes(path), Is.EqualTo(3));
-        Assert.That(GlbInfo.CountNodes(Path.Combine(temp.Path, "missing.glb")), Is.Null);
-    }
-
     private static TreeNodeViewModel Storey(LoadedViewModel loaded, string name) =>
         loaded.Nodes.Single().Children.Single().Children.Single(n => n.Title == name);
 
     private static LoadedViewModel Create(PackageState package) =>
         new(new LoadedModel(new ImportResult.Success(Model, TimeSpan.FromSeconds(3), package), "/m/House.ifc", OpenedPackage: false, TimeSpan.FromMilliseconds(1234)),
             Open, new PlatformServices(new NoPicker(), new NoRevealer(), new NoViewer(), new FakeClipboard()), TimeProvider.System);
-
-    private static byte[] Glb(string json)
-    {
-        var padded = json.PadRight((json.Length + 3) / 4 * 4);
-        var chunk = Encoding.UTF8.GetBytes(padded);
-        var bytes = new List<byte>();
-        bytes.AddRange(Encoding.ASCII.GetBytes("glTF"));
-        bytes.AddRange(BitConverter.GetBytes(2u));
-        bytes.AddRange(BitConverter.GetBytes((uint)(12 + 8 + chunk.Length)));
-        bytes.AddRange(BitConverter.GetBytes((uint)chunk.Length));
-        bytes.AddRange(BitConverter.GetBytes(0x4E4F534Au));
-        bytes.AddRange(chunk);
-        return bytes.ToArray();
-    }
 
     private sealed class NoPicker : IFilePickerService
     {

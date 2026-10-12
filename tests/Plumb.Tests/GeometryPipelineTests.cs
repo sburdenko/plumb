@@ -39,11 +39,12 @@ public sealed class GeometryPipelineTests
 
         var imported = (ImportResult.Success)await service.RunAsync(_ifc, _temp.Path, _noProgress, CancellationToken.None);
 
-        Assert.That(imported.Package, Is.EqualTo(new PackageState.Saved(_package, new GeometryState.Built())));
-        var opened = (ImportResult.Success)await service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);
-        var elementIds = opened.Model.Elements.Select(e => e.GlobalId).ToHashSet();
         var nodeNames = GlbFile.NodeNames(Path.Combine(_package, PackageLayout.GeometryFile));
         Assert.That(nodeNames, Is.Not.Empty);
+        Assert.That(imported.Package, Is.EqualTo(new PackageState.Saved(_package, new GeometryState.Built(nodeNames.Count))));
+        var opened = (ImportResult.Success)await service.OpenPackageAsync(_package, _noProgress, CancellationToken.None);
+        Assert.That(opened.Package, Is.EqualTo(imported.Package));
+        var elementIds = opened.Model.Elements.Select(e => e.GlobalId).ToHashSet();
         Assert.That(nodeNames, Is.SubsetOf(elementIds));
     }
 
