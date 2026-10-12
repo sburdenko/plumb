@@ -25,15 +25,17 @@ public static class PackageReader
         return new PackageContents(model, manifest, GeometryOf(directory, manifest));
     }
 
-    private static GeometryState GeometryOf(string directory, PackageManifest manifest)
+    /// <summary>The geometry state a package reports: the manifest's error, or the node count of its geometry file.</summary>
+    public static GeometryState GeometryOf(string directory, PackageManifest manifest)
     {
         if (manifest.GeometryError is { } error)
         {
             return new GeometryState.NotBuilt(error, manifest.GeometryDetail ?? string.Empty);
         }
 
-        return File.Exists(Path.Combine(directory, PackageLayout.GeometryFile))
-            ? new GeometryState.Built()
+        var glbPath = Path.Combine(directory, PackageLayout.GeometryFile);
+        return File.Exists(glbPath)
+            ? new GeometryState.Built(GlbInfo.CountNodes(glbPath))
             : new GeometryState.NotBuilt(GeometryError.FileMissing, string.Empty);
     }
 

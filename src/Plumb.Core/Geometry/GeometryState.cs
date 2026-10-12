@@ -9,7 +9,8 @@ namespace Plumb.Core.Geometry
         {
         }
 
-        public sealed record Built : GeometryState;
+        /// <param name="NodeCount">Nodes in the geometry file, or null until a package has been read.</param>
+        public sealed record Built(int? NodeCount = null) : GeometryState;
 
         /// <param name="Detail">
         /// Technical detail such as IfcConvert's last error line; may be empty. Not a sentence for the user:

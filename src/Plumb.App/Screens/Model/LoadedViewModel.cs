@@ -12,7 +12,6 @@ using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
 using Plumb.Core.Tree;
-using Plumb.Geometry;
 
 namespace Plumb.App.Screens.Model;
 
@@ -197,8 +196,8 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     private ViewportViewModel ViewportFor(PackageState package, string? sourcePath) => package switch
     {
-        PackageState.Saved { Geometry: GeometryState.Built } saved =>
-            new ViewportReadyViewModel(GlbInfo.CountNodes(Path.Combine(saved.Path, PackageLayout.GeometryFile)), OpenIn3DCommand),
+        PackageState.Saved { Geometry: GeometryState.Built built } =>
+            new ViewportReadyViewModel(built.NodeCount, OpenIn3DCommand),
         PackageState.Saved { Geometry: GeometryState.NotBuilt notBuilt } =>
             new ViewportGeometryMissingViewModel(GeometryWarning.Reason(notBuilt), notBuilt.Detail, Open.OpenPath, sourcePath),
         PackageState.NotSaved notSaved => new ViewportNotSavedViewModel(notSaved.Reason),
