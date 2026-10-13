@@ -19,12 +19,12 @@ namespace Plumb.Viewer
 
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.intensity = 1.1f;
+            sun.intensity = 0.9f;
             sun.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.62f, 0.64f, 0.68f);
-            RenderSettings.ambientEquatorColor = new Color(0.45f, 0.45f, 0.47f);
-            RenderSettings.ambientGroundColor = new Color(0.25f, 0.25f, 0.26f);
+            RenderSettings.ambientSkyColor = new Color(0.55f, 0.57f, 0.61f);
+            RenderSettings.ambientEquatorColor = new Color(0.40f, 0.40f, 0.42f);
+            RenderSettings.ambientGroundColor = new Color(0.22f, 0.22f, 0.23f);
 
             var orbit = viewCamera.gameObject.AddComponent<OrbitCamera>();
             orbit.Attach(viewCamera);
