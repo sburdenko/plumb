@@ -24,9 +24,14 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
     V
  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
-![Plumb with the Duplex model open: spatial tree on the left, properties of the selected wall on the right](docs/plumb.png)
+![The start screen: open actions on the left, recent models with the pinned one on top on the right](docs/start.png)
 
-![The Unity viewer with the same wall selected](docs/viewer.png)
+![Plumb with the NBU Medical Clinic MEP model open: 16,545 elements, the spatial tree on the left, the properties of a duct on the right](docs/plumb.png)
+
+<p>
+  <img src="docs/viewer-clinic.png" width="49%" alt="The Unity viewer showing the mechanical, electrical and plumbing model of the NBU Medical Clinic, 16,012 meshes">
+  <img src="docs/viewer-nvw.png" width="49%" alt="The Unity viewer showing the NVW DCR LOD300 architecture model, 7,354 meshes">
+</p>
 
 ## Features
 
