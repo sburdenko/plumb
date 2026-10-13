@@ -160,6 +160,7 @@ namespace Plumb.Viewer
                 return;
             }
 
+            ModelColors.Apply(_model, _index);
             _benchmark?.SceneShown(Now);
             _colliders = new ColliderBuilder(_model.GetComponentsInChildren<MeshFilter>());
             if (_colliders.Done)
@@ -271,7 +272,7 @@ namespace Plumb.Viewer
         private void Pick(Vector2 screenPoint)
         {
             var ray = _camera.ScreenPointToRay(screenPoint);
-            if (Physics.Raycast(ray, out var hit) && TryFindElement(hit.transform, out var node, out var element))
+            if (Physics.Raycast(ray, out var hit) && _index.TryFind(hit.transform, _model, out var node, out var element))
             {
                 Select(node, element);
             }
@@ -280,22 +281,6 @@ namespace Plumb.Viewer
                 _highlight.Clear();
                 _selected = null;
             }
-        }
-
-        private bool TryFindElement(Transform hit, out Transform node, out ElementInfo element)
-        {
-            for (var current = hit; current != null && current != _model; current = current.parent)
-            {
-                if (_index.TryGet(current.name, out element))
-                {
-                    node = current;
-                    return true;
-                }
-            }
-
-            node = null;
-            element = null;
-            return false;
         }
 
         private void Select(Transform node, ElementInfo element)

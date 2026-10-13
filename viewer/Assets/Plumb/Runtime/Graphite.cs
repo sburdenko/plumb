@@ -48,7 +48,7 @@ namespace Plumb.Viewer
             return texture;
         }
 
-        private static Color Hex(int rgb)
+        internal static Color Hex(int rgb)
         {
             return new Color(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1f);
         }

@@ -1,5 +1,6 @@
 using System;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Plumb.Viewer.Tests
 {
@@ -47,6 +48,36 @@ namespace Plumb.Viewer.Tests
         public void NotAListIsRejected()
         {
             Assert.That(() => ElementIndex.Parse("{ \"formatVersion\": 1 }"), Throws.InstanceOf<ArgumentException>());
+        }
+
+        [Test]
+        public void FindsTheElementAboveAMeshNode()
+        {
+            var index = ElementIndex.Parse("[{\"id\":\"W1\",\"type\":\"IfcWall\",\"name\":\"Wall\",\"storey\":null}]");
+            var root = new GameObject("Model").transform;
+            var element = new GameObject("W1").transform;
+            var mesh = new GameObject("mesh 0").transform;
+            element.SetParent(root);
+            mesh.SetParent(element);
+
+            var found = index.TryFind(mesh, root, out var node, out var info);
+
+            Assert.That(found, Is.True);
+            Assert.That(node, Is.SameAs(element));
+            Assert.That(info.Type, Is.EqualTo("IfcWall"));
+            UnityEngine.Object.DestroyImmediate(root.gameObject);
+        }
+
+        [Test]
+        public void FindsNothingForANodeThatIsNoElement()
+        {
+            var index = ElementIndex.Parse("[]");
+            var root = new GameObject("Model").transform;
+            var stray = new GameObject("stray").transform;
+            stray.SetParent(root);
+
+            Assert.That(index.TryFind(stray, root, out _, out _), Is.False);
+            UnityEngine.Object.DestroyImmediate(root.gameObject);
         }
     }
 }
