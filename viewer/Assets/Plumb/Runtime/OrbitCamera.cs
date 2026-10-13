@@ -48,9 +48,8 @@ namespace Plumb.Viewer
         public void Frame(Bounds bounds)
         {
             _pivot = bounds.center;
-            var radius = Mathf.Max(bounds.extents.magnitude, 0.01f);
-            var halfFov = _camera.fieldOfView * 0.5f * Mathf.Deg2Rad;
-            _distance = radius / Mathf.Sin(halfFov) * FramingMargin;
+            var rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+            _distance = Framing.Distance(bounds, rotation, _camera.fieldOfView, _camera.aspect) * FramingMargin;
             Apply();
         }
 
