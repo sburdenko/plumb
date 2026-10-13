@@ -45,6 +45,26 @@ namespace Plumb.Viewer
             return _byId.TryGetValue(id ?? string.Empty, out element);
         }
 
+        /// <summary>
+        /// Walks from a mesh up to <paramref name="root"/> and returns the first node that is an element: a glTF node
+        /// is named by its element's GlobalId, and a mesh may sit in a child node below it.
+        /// </summary>
+        public bool TryFind(Transform from, Transform root, out Transform node, out ElementInfo element)
+        {
+            for (var current = from; current != null && current != root; current = current.parent)
+            {
+                if (TryGet(current.name, out element))
+                {
+                    node = current;
+                    return true;
+                }
+            }
+
+            node = null;
+            element = null;
+            return false;
+        }
+
         private static string Blank(string value) => string.IsNullOrEmpty(value) ? null : value;
 
         [Serializable]
