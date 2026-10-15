@@ -9,9 +9,9 @@ public sealed class QueryParserTests
     [TestCase("")]
     [TestCase("   ")]
     [TestCase(" ; ")]
-    public void ABlankBoxIsAnEmptyQuery(string? text)
+    public void ABlankBoxHasNothingToSearch(string? text)
     {
-        Assert.That(Parse(text), Is.Empty);
+        Assert.That(QueryParser.Parse(text), Is.TypeOf<ParseResult.Blank>());
     }
 
     [Test]

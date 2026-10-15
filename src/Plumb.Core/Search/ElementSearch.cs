@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Threading;
 using Plumb.Core.Model;
 
 namespace Plumb.Core.Search
@@ -12,7 +10,6 @@ namespace Plumb.Core.Search
     /// </summary>
     public sealed class ElementSearch
     {
-        private const int CancellationCheckInterval = 4096;
         private const double NumberTolerance = 1e-9;
 
         private readonly IReadOnlyList<ElementRecord> _elements;
@@ -24,15 +21,13 @@ namespace Plumb.Core.Search
             _propertiesByName = new Lazy<Dictionary<string, List<PropertyRecord>>>(() => IndexByName(properties));
         }
 
-        /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-        public ElementMatches Find(ElementQuery query, CancellationToken cancellationToken)
+        public ElementMatches Find(ElementQuery query)
         {
             HashSet<string>? matches = null;
             foreach (var condition in query.Conditions)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var found = Evaluate(condition, cancellationToken);
-                if (matches == null)
+                var found = Evaluate(condition);
+                if (matches is null)
                 {
                     matches = found;
                 }
@@ -50,32 +45,22 @@ namespace Plumb.Core.Search
             return new ElementMatches(matches ?? AllGlobalIds());
         }
 
-        private HashSet<string> Evaluate(Condition condition, CancellationToken cancellationToken)
+        private HashSet<string> Evaluate(Condition condition) => condition switch
         {
-            switch (condition)
-            {
-                case Condition.Text text:
-                    return MatchText(text.Term, cancellationToken);
-                case Condition.PropertyEquals equals:
-                    return MatchProperty(equals.Name, value => ValuesAreEqual(value, equals.Value), cancellationToken);
-                case Condition.PropertyContains contains:
-                    return MatchProperty(contains.Name, value => Contains(value, contains.Value), cancellationToken);
-                case Condition.PropertyNumber number:
-                    return MatchProperty(number.Name, value => Passes(value, number), cancellationToken);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(condition), condition.GetType().Name, "Unknown condition.");
-            }
-        }
+            Condition.Text text => MatchText(text.Term),
+            Condition.PropertyEquals equals => MatchProperty(equals.Name, value => ValuesAreEqual(value, equals.Value)),
+            Condition.PropertyContains contains => MatchProperty(contains.Name, value => Contains(value, contains.Value)),
+            Condition.PropertyNumber number => MatchProperty(number.Name, value => Passes(value, number)),
+            _ => throw new ArgumentOutOfRangeException(nameof(condition), condition.GetType().Name, "Unknown condition."),
+        };
 
-        private HashSet<string> MatchText(string term, CancellationToken cancellationToken)
+        private HashSet<string> MatchText(string term)
         {
             var matches = new HashSet<string>(StringComparer.Ordinal);
-            var checkedCount = 0;
             foreach (var element in _elements)
             {
-                ThrowIfCancelled(++checkedCount, cancellationToken);
                 if (Contains(element.Name, term) || Contains(element.IfcType, term) || Contains(element.GlobalId, term)
-                    || Contains(element.Tag == null ? null : "#" + element.Tag, term))
+                    || Contains(element.Tag is null ? null : "#" + element.Tag, term))
                 {
                     matches.Add(element.GlobalId);
                 }
@@ -84,19 +69,17 @@ namespace Plumb.Core.Search
             return matches;
         }
 
-        private HashSet<string> MatchProperty(string name, Func<string, bool> valuePasses, CancellationToken cancellationToken)
+        private HashSet<string> MatchProperty(string name, Func<string, bool> valuePasses)
         {
             var matches = new HashSet<string>(StringComparer.Ordinal);
-            if (!_propertiesByName.Value.TryGetValue(name.Trim(), out var properties))
+            if (!_propertiesByName.Value.TryGetValue(name, out var properties))
             {
                 return matches;
             }
 
-            var checkedCount = 0;
             foreach (var property in properties)
             {
-                ThrowIfCancelled(++checkedCount, cancellationToken);
-                if (property.Value != null && valuePasses(property.Value))
+                if (property.Value is { } value && valuePasses(value))
                 {
                     matches.Add(property.GlobalId);
                 }
@@ -135,45 +118,26 @@ namespace Plumb.Core.Search
 
         private static bool ValuesAreEqual(string stored, string wanted)
         {
-            if (TryNumber(stored, out var storedNumber) && TryNumber(wanted, out var wantedNumber))
+            if (Numbers.TryParseFinite(stored, out var storedNumber) && Numbers.TryParseFinite(wanted, out var wantedNumber))
             {
                 var scale = Math.Max(1d, Math.Max(Math.Abs(storedNumber), Math.Abs(wantedNumber)));
                 return Math.Abs(storedNumber - wantedNumber) <= NumberTolerance * scale;
             }
 
-            return string.Equals(stored.Trim(), wanted.Trim(), StringComparison.OrdinalIgnoreCase);
+            return string.Equals(stored.Trim(), wanted, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool Passes(string value, Condition.PropertyNumber condition)
-        {
-            if (!TryNumber(value, out var number))
+        private static bool Passes(string value, Condition.PropertyNumber condition) =>
+            Numbers.TryParseFinite(value, out var number) && condition.Comparison switch
             {
-                return false;
-            }
-
-            switch (condition.Comparison)
-            {
-                case NumberComparison.Less: return number < condition.Number;
-                case NumberComparison.LessOrEqual: return number <= condition.Number;
-                case NumberComparison.Greater: return number > condition.Number;
-                case NumberComparison.GreaterOrEqual: return number >= condition.Number;
-                default: throw new ArgumentOutOfRangeException(nameof(condition), condition.Comparison, "Unknown comparison.");
-            }
-        }
-
-        private static bool TryNumber(string text, out double number) =>
-            double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number)
-            && !double.IsNaN(number) && !double.IsInfinity(number);
+                NumberComparison.Less => number < condition.Number,
+                NumberComparison.LessOrEqual => number <= condition.Number,
+                NumberComparison.Greater => number > condition.Number,
+                NumberComparison.GreaterOrEqual => number >= condition.Number,
+                _ => throw new ArgumentOutOfRangeException(nameof(condition), condition.Comparison, "Unknown comparison."),
+            };
 
         private static bool Contains(string? text, string term) =>
-            text != null && text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0;
-
-        private static void ThrowIfCancelled(int checkedCount, CancellationToken cancellationToken)
-        {
-            if (checkedCount % CancellationCheckInterval == 0)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-            }
-        }
+            text is not null && text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

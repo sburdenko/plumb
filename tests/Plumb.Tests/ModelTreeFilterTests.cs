@@ -88,13 +88,13 @@ public sealed class ModelTreeFilterTests
     private IReadOnlyList<ModelTreeNode> Filter(string text)
     {
         var query = ((ParseResult.Parsed)QueryParser.Parse(text)).Query;
-        return ModelTreeFilter.Apply(_tree, _search.Find(query, CancellationToken.None));
+        return ModelTreeFilter.Apply(_tree, _search.Find(query));
     }
 
     [Test]
     public void ANodeThatMatchesKeepsItsWholeSubtree()
     {
-        var matches = _search.Find(new ElementQuery([new Condition.Text("level 1")]), CancellationToken.None);
+        var matches = _search.Find(new ElementQuery([new Condition.Text("level 1")]));
 
         var result = ModelTreeFilter.Apply(_tree, matches);
 
