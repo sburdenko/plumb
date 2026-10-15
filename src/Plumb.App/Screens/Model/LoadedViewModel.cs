@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Plumb.App.Formatting;
 using Plumb.App.Platform;
+using Plumb.App.Screens.Model.Filter;
 using Plumb.App.Screens.Model.Properties;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
@@ -11,6 +12,7 @@ using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
+using Plumb.Core.Search;
 using Plumb.Core.Tree;
 
 namespace Plumb.App.Screens.Model;
@@ -23,6 +25,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     private const int MaxNodesToExpandOnFilter = 300;
 
     private readonly IReadOnlyList<ModelTreeNode> _tree;
+    private readonly ElementSearch _search;
     private readonly ILookup<string, PropertyRecord> _propertiesByElement;
     private readonly IReadOnlyDictionary<string, ElementRecord> _elementsById;
     private readonly Dictionary<string, bool> _expansion = new(StringComparer.Ordinal);
@@ -36,6 +39,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     {
         var model = loaded.Result.Model;
         _tree = ModelTreeBuilder.Build(model.Elements);
+        _search = new ElementSearch(model.Elements, model.Properties);
         _propertiesByElement = model.Properties.ToLookup(p => p.GlobalId);
         _elementsById = model.Elements.ToDictionary(e => e.GlobalId);
         _package = loaded.Result.Package;
@@ -98,6 +102,10 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     [ObservableProperty]
     public partial string? Filter { get; set; }
 
+    /// <summary>The result of the filter text, or null while the box is empty.</summary>
+    [ObservableProperty]
+    public partial FilterStatusViewModel? FilterStatus { get; private set; }
+
     [ObservableProperty]
     public partial IReadOnlyList<TreeNodeViewModel> Nodes { get; private set; }
 
@@ -138,8 +146,25 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     partial void OnFilterChanged(string? value)
     {
-        var filtering = !string.IsNullOrWhiteSpace(value);
-        var nodes = ModelTreeFilter.Apply(_tree, value);
+        switch (QueryParser.Parse(value))
+        {
+            case ParseResult.Invalid invalid:
+                FilterStatus = new FilterRejectedViewModel(invalid.Reason);
+                break;
+            case ParseResult.Parsed { Query.Conditions.Count: 0 }:
+                FilterStatus = null;
+                ShowNodes(_tree, filtering: false);
+                break;
+            case ParseResult.Parsed parsed:
+                var matches = _search.Find(parsed.Query, CancellationToken.None);
+                FilterStatus = new FilterMatchedViewModel(matches.Count);
+                ShowNodes(ModelTreeFilter.Apply(_tree, matches), filtering: true);
+                break;
+        }
+    }
+
+    private void ShowNodes(IReadOnlyList<ModelTreeNode> nodes, bool filtering)
+    {
         Nodes = BuildNodes(nodes, expandAll: filtering && CountNodes(nodes) <= MaxNodesToExpandOnFilter, remember: !filtering);
         MarkActiveStorey();
     }

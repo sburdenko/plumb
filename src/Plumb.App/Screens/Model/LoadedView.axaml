@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:model="using:Plumb.App.Screens.Model"
+             xmlns:filter="using:Plumb.App.Screens.Model.Filter"
              xmlns:properties="using:Plumb.App.Screens.Model.Properties"
              xmlns:tree="using:Plumb.App.Screens.Model.Tree"
              xmlns:viewport="using:Plumb.App.Screens.Model.Viewport"
@@ -50,11 +51,25 @@
                         <TextBlock Classes="caps" Text="SPATIAL STRUCTURE" />
                         <TextBlock Grid.Column="1" Classes="caps muted numbers" Text="{Binding ElementCount}" />
                     </Grid>
-                    <TextBox Name="FilterBox" Classes="filter" PlaceholderText="Filter elements" Text="{Binding Filter}">
+                    <TextBox Name="FilterBox" Classes="filter" PlaceholderText="Name, #tag, Property = value" Text="{Binding Filter}">
+                        <ToolTip.Tip>
+                            <TextBlock TextWrapping="Wrap" MaxWidth="300" LineHeight="20"
+                                       Text="Words search names, classes, GlobalIds and tags.&#10;FireRating = REI 90 matches a property value, Size ~ 1150 part of one, Area &gt; 10 a number.&#10;Join conditions with ;" />
+                        </ToolTip.Tip>
                         <TextBox.KeyBindings>
                             <KeyBinding Gesture="Escape" Command="{Binding ClearFilterCommand}" />
                         </TextBox.KeyBindings>
                     </TextBox>
+                    <ContentControl Content="{Binding FilterStatus}" TextElement.FontSize="12">
+                        <ContentControl.DataTemplates>
+                            <DataTemplate DataType="filter:FilterMatchedViewModel">
+                                <TextBlock Classes="muted numbers" Text="{Binding Text}" />
+                            </DataTemplate>
+                            <DataTemplate DataType="filter:FilterRejectedViewModel">
+                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                            </DataTemplate>
+                        </ContentControl.DataTemplates>
+                    </ContentControl>
                 </StackPanel>
                 <TreeView ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ItemsSource="{Binding Nodes}"

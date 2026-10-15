@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Plumb.App.Platform;
 using Plumb.App.Screens.Model;
+using Plumb.App.Screens.Model.Filter;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
 using Plumb.App.Shell;
@@ -28,6 +29,7 @@ public sealed class LoadedViewModelTests
         [
             new PropertyRecord("W1", "Pset_WallCommon", "IsExternal", "true", null),
             new PropertyRecord("W1", "Qto_WallBaseQuantities", "Length", "4.57", "m"),
+            new PropertyRecord("D2", "Pset_DoorCommon", "FireRating", "REI 30", null),
         ]);
 
     private static readonly OpenCommands Open = new(
@@ -43,7 +45,7 @@ public sealed class LoadedViewModelTests
         Assert.That(loaded.ProjectName, Is.EqualTo("Duplex Residence"));
         Assert.That(loaded.FileName, Is.EqualTo("House.ifc"));
         Assert.That(loaded.Schema, Is.EqualTo("IFC4"));
-        Assert.That(loaded.Counts, Is.EqualTo("6 elements · 2 values"));
+        Assert.That(loaded.Counts, Is.EqualTo("6 elements · 3 values"));
         Assert.That(loaded.LoadTime, Is.EqualTo("1.2 s"));
     }
 
@@ -98,6 +100,69 @@ public sealed class LoadedViewModelTests
     }
 
     [Test]
+    public void APropertyConditionNarrowsTheTreeAndCountsTheMatches()
+    {
+        var loaded = Create(new PackageState.NotSaved("x"));
+
+        loaded.Filter = "Length > 4";
+
+        var labels = Flatten(loaded.Nodes).Select(n => n.Label).ToList();
+        Assert.That(labels, Does.Contain("Wall A"));
+        Assert.That(labels, Does.Not.Contain("Door B"));
+        Assert.That(loaded.FilterStatus, Is.TypeOf<FilterMatchedViewModel>());
+        Assert.That(loaded.FilterStatus!.Text, Is.EqualTo("1 element matches"));
+    }
+
+    [Test]
+    public void TextAndAPropertyAreCombined()
+    {
+        var loaded = Create(new PackageState.NotSaved("x"));
+
+        loaded.Filter = "door; FireRating = REI 30";
+
+        var labels = Flatten(loaded.Nodes).Select(n => n.Label).ToList();
+        Assert.That(labels, Does.Contain("Door B"));
+        Assert.That(labels, Does.Not.Contain("Wall A"));
+    }
+
+    [Test]
+    public void NothingMatchingIsSaidPlainly()
+    {
+        var loaded = Create(new PackageState.NotSaved("x"));
+
+        loaded.Filter = "nothing like this";
+
+        Assert.That(loaded.Nodes, Is.Empty);
+        Assert.That(loaded.FilterStatus!.Text, Is.EqualTo("No element matches"));
+    }
+
+    [Test]
+    public void AnUnfinishedConditionKeepsTheTreeAndSaysWhatIsMissing()
+    {
+        var loaded = Create(new PackageState.NotSaved("x"));
+        loaded.Filter = "Wall";
+        var before = loaded.Nodes;
+
+        loaded.Filter = "Wall; Length >";
+
+        Assert.That(loaded.Nodes, Is.SameAs(before));
+        Assert.That(loaded.FilterStatus, Is.TypeOf<FilterRejectedViewModel>());
+        Assert.That(loaded.FilterStatus!.Text, Does.Contain("number"));
+    }
+
+    [Test]
+    public void ClearingTheFilterRemovesItsStatus()
+    {
+        var loaded = Create(new PackageState.NotSaved("x"));
+        loaded.Filter = "Length > 4";
+
+        loaded.ClearFilterCommand.Execute(null);
+
+        Assert.That(loaded.FilterStatus, Is.Null);
+        Assert.That(loaded.Nodes, Is.Not.Empty);
+    }
+
+    [Test]
     public void ClearingTheFilterRestoresTheExpansionTheUserChose()
     {
         var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()));
@@ -109,6 +174,9 @@ public sealed class LoadedViewModelTests
         Assert.That(Storey(loaded, "Level 2").IsExpanded, Is.True);
         Assert.That(Storey(loaded, "Level 1").IsExpanded, Is.False);
     }
+
+    private static IEnumerable<TreeNodeViewModel> Flatten(IEnumerable<TreeNodeViewModel> nodes) =>
+        nodes.SelectMany(node => Flatten(node.Children).Prepend(node));
 
     private static TreeNodeViewModel Storey(LoadedViewModel loaded, string name) =>
         loaded.Nodes.Single().Children.Single().Children.Single(n => n.Title == name);
