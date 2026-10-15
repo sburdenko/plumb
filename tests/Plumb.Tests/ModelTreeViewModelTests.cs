@@ -114,6 +114,55 @@ public sealed class ModelTreeViewModelTests
         Assert.That(Storey(tree, "Level 1").IsExpanded, Is.False);
     }
 
+    [Test]
+    public void SelectingAnElementByIdOpensTheRowsAboveIt()
+    {
+        var tree = Tree();
+
+        tree.SelectElement("D2");
+
+        Assert.That(tree.SelectedNode?.Element?.GlobalId, Is.EqualTo("D2"));
+        Assert.That(Storey(tree, "Level 2").IsExpanded, Is.True);
+        Assert.That(Storey(tree, "Level 2").Children.Single().IsExpanded, Is.True);
+        Assert.That(Storey(tree, "Level 1").IsExpanded, Is.False);
+    }
+
+    [Test]
+    public void AnElementInTheSearchResultKeepsTheSearch()
+    {
+        var tree = Tree();
+        tree.Filter = "Wall";
+
+        tree.SelectElement("W1");
+
+        Assert.That(tree.Filter, Is.EqualTo("Wall"));
+        Assert.That(tree.SelectedNode?.Element?.GlobalId, Is.EqualTo("W1"));
+    }
+
+    [Test]
+    public void AnElementOutsideTheSearchResultClearsTheSearchToShowIt()
+    {
+        var tree = Tree();
+        tree.Filter = "Wall";
+
+        tree.SelectElement("D2");
+
+        Assert.That(tree.Filter, Is.Null);
+        Assert.That(tree.SelectedNode?.Element?.GlobalId, Is.EqualTo("D2"));
+    }
+
+    [TestCase(null)]
+    [TestCase("not-in-the-tree")]
+    public void NothingOrAnElementNotInTheTreeClearsTheSelection(string? globalId)
+    {
+        var tree = Tree();
+        tree.SelectElement("W1");
+
+        tree.SelectElement(globalId);
+
+        Assert.That(tree.SelectedNode, Is.Null);
+    }
+
     private static ModelTreeViewModel Tree() => new(Elements, Properties, _ => { });
 
     private static IEnumerable<TreeNodeViewModel> Flatten(IEnumerable<TreeNodeViewModel> nodes) =>
