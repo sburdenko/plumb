@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Plumb.App.Formatting;
 using Plumb.App.Platform;
+using Plumb.App.Platform.Viewer;
 using Plumb.App.Screens.Model.Properties;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
@@ -102,6 +103,15 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     [ObservableProperty]
     public partial string? ActionError { get; private set; }
+
+    /// <summary>Follows a selection made in the viewer, when that viewer shows this model.</summary>
+    public void ShowViewerSelection(ViewerSelection selection)
+    {
+        if (selection.PackagePath == PackagePath)
+        {
+            Tree.SelectElement(selection.GlobalId);
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanOpenIn3D))]
     private void OpenIn3D()

@@ -106,6 +106,33 @@ public sealed class MainWindowLoadedModelTests
         Assert.That(loaded.ActionError, Is.EqualTo("The 3D viewer was not found."));
     }
 
+    [Test]
+    public async Task SelectingInTheViewerSelectsTheElementInTheTree()
+    {
+        var loaded = await LoadAsync(Loaded);
+
+        _shell.Viewer.SelectInViewer("/models/a.plumb", "P");
+
+        Assert.That(loaded.Tree.SelectedNode?.Element?.GlobalId, Is.EqualTo("P"));
+        Assert.That(loaded.SelectedName, Is.EqualTo("Project"));
+    }
+
+    [Test]
+    public async Task ASelectionFromTheViewerOfAnotherModelIsIgnored()
+    {
+        var loaded = await LoadAsync(Loaded);
+
+        _shell.Viewer.SelectInViewer("/models/b.plumb", "P");
+
+        Assert.That(loaded.Tree.SelectedNode, Is.Null);
+    }
+
+    [Test]
+    public void ASelectionFromTheViewerBeforeAnyModelIsLoadedIsIgnored()
+    {
+        Assert.That(() => _shell.Viewer.SelectInViewer("/models/a.plumb", "P"), Throws.Nothing);
+    }
+
     private async Task<LoadedViewModel> LoadAsync(ImportResult result)
     {
         _shell.Import.Next = result;

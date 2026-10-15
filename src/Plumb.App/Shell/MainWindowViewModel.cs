@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Plumb.App.Platform;
+using Plumb.App.Platform.Viewer;
 using Plumb.App.Screens.Failed;
 using Plumb.App.Screens.Importing;
 using Plumb.App.Screens.Model;
@@ -39,6 +40,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _open = new OpenCommands(OpenIfcCommand, OpenPackageCommand, OpenPathCommand);
         _recent = new RecentModelsViewModel(recentModels, OpenPathCommand, platform.Revealer, clock);
         CurrentState = Empty(errorMessage: null);
+        platform.Viewer.SelectionChanged += OnViewerSelectionChanged;
     }
 
     /// <summary>The recent models, for the start screen and the system menus.</summary>
@@ -128,6 +130,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (path != null && CanOpenPath(path))
         {
             await OpenPathAsync(path);
+        }
+    }
+
+    private void OnViewerSelectionChanged(object? sender, ViewerSelection selection)
+    {
+        if (CurrentState is LoadedViewModel loaded)
+        {
+            loaded.ShowViewerSelection(selection);
         }
     }
 

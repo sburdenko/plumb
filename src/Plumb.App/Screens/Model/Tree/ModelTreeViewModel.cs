@@ -57,6 +57,27 @@ public sealed partial class ModelTreeViewModel : ViewModelBase
     [ObservableProperty]
     public partial TreeNodeViewModel? SelectedNode { get; set; }
 
+    /// <summary>
+    /// Selects the element with <paramref name="globalId"/> and opens the rows above it. An element outside the
+    /// search result clears the search; null, or an element the tree does not show, clears the selection.
+    /// </summary>
+    public void SelectElement(string? globalId)
+    {
+        var path = globalId == null ? null : PathTo(Nodes, globalId);
+        if (path == null && globalId != null && _mode == TreeMode.SearchResult)
+        {
+            Filter = null;
+            path = PathTo(Nodes, globalId);
+        }
+
+        foreach (var ancestor in path?.SkipLast(1) ?? [])
+        {
+            ancestor.IsExpanded = true;
+        }
+
+        SelectedNode = path?[^1];
+    }
+
     [RelayCommand]
     private void ClearFilter() => Filter = null;
 
@@ -117,6 +138,24 @@ public sealed partial class ModelTreeViewModel : ViewModelBase
         {
             storey.IsActiveStorey = storey.Key == storeyId;
         }
+    }
+
+    private static IReadOnlyList<TreeNodeViewModel>? PathTo(IEnumerable<TreeNodeViewModel> nodes, string globalId)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Element?.GlobalId == globalId)
+            {
+                return [node];
+            }
+
+            if (PathTo(node.Children, globalId) is { } below)
+            {
+                return [node, .. below];
+            }
+        }
+
+        return null;
     }
 
     private static bool ExpandedByDefault(ModelTreeNode node) =>
