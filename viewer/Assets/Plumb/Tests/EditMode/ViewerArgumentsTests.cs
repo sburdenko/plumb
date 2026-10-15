@@ -39,6 +39,25 @@ namespace Plumb.Viewer.Tests
         }
 
         [Test]
+        public void ReadsTheLinkPortAndTakesTheTokenFromTheEnvironment()
+        {
+            var arguments = ViewerArguments.Parse(new[] { "viewer", "--package", "/m/a.plumb", "--link", "52814" }, "secret");
+
+            Assert.That(arguments.LinkPort, Is.EqualTo(52814));
+            Assert.That(arguments.LinkToken, Is.EqualTo("secret"));
+        }
+
+        [TestCase(new[] { "viewer", "--link", "52814" }, null)]
+        [TestCase(new[] { "viewer", "--link", "52814" }, "")]
+        [TestCase(new[] { "viewer" }, "secret")]
+        [TestCase(new[] { "viewer", "--link", "port" }, "secret")]
+        [TestCase(new[] { "viewer", "--link", "70000" }, "secret")]
+        public void WithoutAPortAndATokenThereIsNoLink(string[] args, string token)
+        {
+            Assert.That(ViewerArguments.Parse(args, token).LinkPort, Is.Null);
+        }
+
+        [Test]
         public void ReadsSelectionAndScreenshot()
         {
             var arguments = ViewerArguments.Parse(new[] { "viewer", "--select", "2O2Fr$t4X7Zf8NOew3FNtn", "--screenshot", "/tmp/shot.png" });
