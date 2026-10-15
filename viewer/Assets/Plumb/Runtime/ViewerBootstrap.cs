@@ -30,7 +30,10 @@ namespace Plumb.Viewer
             orbit.Attach(viewCamera);
 
             var controller = new GameObject("Viewer").AddComponent<ViewerController>();
-            controller.Begin(ViewerArguments.Parse(Environment.GetCommandLineArgs()), viewCamera, orbit);
+            var arguments = ViewerArguments.Parse(
+                Environment.GetCommandLineArgs(),
+                Environment.GetEnvironmentVariable(ViewerArguments.LinkTokenVariable));
+            controller.Begin(arguments, viewCamera, orbit);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using GLTFast;
@@ -9,7 +10,8 @@ namespace Plumb.Viewer
     /// <summary>
     /// Loads a <c>.plumb</c> package and lets the user pick elements. Driven from <see cref="Update"/> as a
     /// state machine: glTFast's loading tasks are polled each frame rather than awaited. Screenshots and benchmarks
-    /// are a <see cref="ViewerAutomation"/>, told how loading goes and stepped every frame.
+    /// are a <see cref="ViewerAutomation"/>, told how loading goes and stepped every frame. Picks are shared with
+    /// the Plumb that started the viewer through a <see cref="PlumbLink"/>, and Plumb's selections are followed.
     /// </summary>
     public sealed class ViewerController : MonoBehaviour, IViewerHost
     {
@@ -33,6 +35,11 @@ namespace Plumb.Viewer
         private ColliderBuilder _colliders;
         private ElementInfo _selected;
         private ViewerAutomation _automation = new NoAutomation();
+        private PlumbLink _link = new NoLink();
+        private Dictionary<string, Transform> _nodesById = new Dictionary<string, Transform>();
+
+        /// <summary>The element to select once the scene is shown: <c>--select</c>, then whatever Plumb asks for.</summary>
+        private string _pendingSelection;
 
         private enum ViewerState
         {
@@ -51,6 +58,8 @@ namespace Plumb.Viewer
             _orbit.IsOverUi = IsPointerOverUi;
             _automation = ViewerAutomation.For(arguments);
             _automation.Begin(this, Now);
+            _link = PlumbLink.For(arguments);
+            _pendingSelection = arguments.SelectId;
             StartLoading();
         }
 
@@ -98,6 +107,11 @@ namespace Plumb.Viewer
 
         private void Update()
         {
+            while (_link.TryReceive(out var message))
+            {
+                Follow(message);
+            }
+
             switch (_state)
             {
                 case ViewerState.LoadingModel:
@@ -159,8 +173,9 @@ namespace Plumb.Viewer
                 _orbit.SetScene(scene);
             }
 
+            _nodesById = NodesById();
             FrameModel();
-            SelectRequestedElement();
+            SelectPending();
             Finish(ViewerState.Ready, null);
         }
 
@@ -250,35 +265,76 @@ namespace Plumb.Viewer
             if (Physics.Raycast(ray, out var hit) && _index.TryFind(hit.transform, _model, out var node, out var element))
             {
                 Select(node, element);
+                _link.Share(element.Id);
             }
             else
             {
-                _highlight.Clear();
-                _selected = null;
+                ClearSelection();
+                _link.Share(null);
             }
+        }
+
+        /// <summary>Selects what Plumb selected and frames it; before the scene is shown, keeps it for later.</summary>
+        private void Follow(LinkMessage message)
+        {
+            var globalId = (message as LinkMessage.Select)?.GlobalId;
+            if (_state != ViewerState.Ready)
+            {
+                _pendingSelection = globalId;
+                return;
+            }
+
+            if (TrySelect(globalId))
+            {
+                FrameSelectionOrModel();
+            }
+            else
+            {
+                ClearSelection();
+            }
+        }
+
+        private void SelectPending()
+        {
+            TrySelect(_pendingSelection);
+            _pendingSelection = null;
+        }
+
+        private bool TrySelect(string globalId)
+        {
+            if (globalId == null || !_nodesById.TryGetValue(globalId, out var node) || !_index.TryGet(globalId, out var element))
+            {
+                return false;
+            }
+
+            Select(node, element);
+            return true;
+        }
+
+        private void ClearSelection()
+        {
+            _highlight.Clear();
+            _selected = null;
+        }
+
+        private Dictionary<string, Transform> NodesById()
+        {
+            var nodes = new Dictionary<string, Transform>(StringComparer.Ordinal);
+            foreach (var node in _model.GetComponentsInChildren<Transform>())
+            {
+                if (_index.TryGet(node.name, out _) && !nodes.ContainsKey(node.name))
+                {
+                    nodes.Add(node.name, node);
+                }
+            }
+
+            return nodes;
         }
 
         private void Select(Transform node, ElementInfo element)
         {
             _highlight.Show(node);
             _selected = element;
-        }
-
-        private void SelectRequestedElement()
-        {
-            if (string.IsNullOrEmpty(_arguments.SelectId))
-            {
-                return;
-            }
-
-            foreach (var node in _model.GetComponentsInChildren<Transform>())
-            {
-                if (node.name == _arguments.SelectId && _index.TryGet(node.name, out var element))
-                {
-                    Select(node, element);
-                    return;
-                }
-            }
         }
 
         private void FrameModel()
@@ -324,7 +380,7 @@ namespace Plumb.Viewer
 
         private void OnGUI()
         {
-            ViewerChrome.DrawTopBar(_packageName);
+            ViewerChrome.DrawTopBar(_packageName, _link.State == LinkState.Linked ? "LINKED TO PLUMB" : null);
 
             switch (_state)
             {
@@ -355,6 +411,7 @@ namespace Plumb.Viewer
         {
             _highlight.Clear();
             _import?.Dispose();
+            _link.Dispose();
         }
     }
 }

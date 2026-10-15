@@ -1,9 +1,10 @@
 using Plumb.App.Platform;
+using Plumb.App.Platform.Viewer;
 
 namespace Plumb.Tests;
 
 [TestFixture]
-public sealed class ViewerLauncherTests
+public sealed class ViewerStarterTests
 {
     private TempDirectory _temp = null!;
 
@@ -16,7 +17,7 @@ public sealed class ViewerLauncherTests
     [Test]
     public void MissingLocationHasNoViewer()
     {
-        Assert.That(ViewerLauncher.FindExecutable(Path.Combine(_temp.Path, "viewer-build")), Is.Null);
+        Assert.That(ViewerStarter.FindExecutable(Path.Combine(_temp.Path, "viewer-build")), Is.Null);
     }
 
     [Test]
@@ -24,7 +25,7 @@ public sealed class ViewerLauncherTests
     {
         var executable = _temp.WriteFile("custom-viewer", "binary");
 
-        Assert.That(ViewerLauncher.FindExecutable(executable), Is.EqualTo(executable));
+        Assert.That(ViewerStarter.FindExecutable(executable), Is.EqualTo(executable));
     }
 
     [Test]
@@ -36,8 +37,8 @@ public sealed class ViewerLauncherTests
         var binary = Path.Combine(binaries, "Plumb Viewer");
         File.WriteAllText(binary, "binary");
 
-        Assert.That(ViewerLauncher.FindExecutable(_temp.Path), Is.EqualTo(binary));
-        Assert.That(ViewerLauncher.FindExecutable(Path.Combine(_temp.Path, "PlumbViewer.app")), Is.EqualTo(binary));
+        Assert.That(ViewerStarter.FindExecutable(_temp.Path), Is.EqualTo(binary));
+        Assert.That(ViewerStarter.FindExecutable(Path.Combine(_temp.Path, "PlumbViewer.app")), Is.EqualTo(binary));
     }
 
     [Test]
@@ -46,17 +47,18 @@ public sealed class ViewerLauncherTests
     {
         var player = _temp.WriteFile("PlumbViewer.x86_64", "binary");
 
-        Assert.That(ViewerLauncher.FindExecutable(_temp.Path), Is.EqualTo(player));
+        Assert.That(ViewerStarter.FindExecutable(_temp.Path), Is.EqualTo(player));
     }
 
     [Test]
     public void MissingPackageIsReportedBeforeStartingTheViewer()
     {
-        var launcher = new ViewerLauncher(Microsoft.Extensions.Logging.Abstractions.NullLogger<ViewerLauncher>.Instance);
+        var starter = new ViewerStarter(Microsoft.Extensions.Logging.Abstractions.NullLogger<ViewerStarter>.Instance);
 
-        var opened = launcher.TryOpen(Path.Combine(_temp.Path, "Gone.plumb"), out var error);
+        var started = starter.TryStart(Path.Combine(_temp.Path, "Gone.plumb"), invitation: null, out var process, out var error);
 
-        Assert.That(opened, Is.False);
+        Assert.That(started, Is.False);
+        Assert.That(process, Is.Null);
         Assert.That(error, Is.EqualTo("Gone.plumb no longer exists."));
     }
 
@@ -69,6 +71,6 @@ public sealed class ViewerLauncherTests
         var exe = Path.Combine(folder, "PlumbViewer.exe");
         File.WriteAllText(exe, "binary");
 
-        Assert.That(ViewerLauncher.FindExecutable(_temp.Path), Is.EqualTo(exe));
+        Assert.That(ViewerStarter.FindExecutable(_temp.Path), Is.EqualTo(exe));
     }
 }
