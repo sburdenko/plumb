@@ -44,7 +44,6 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Numbers are compared by the operator
 - Every condition must hold
 - A property no element has matches nothing
-- A cancelled search stops
 
 ## Geometry Pipeline
 
@@ -132,43 +131,43 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Missing geometry explains it and offers reimport
 - Unsaved package marks both status items as problems
 - Selecting an element marks its storey and fills the details
-- A property condition narrows the tree and counts the matches
-- Text and a property are combined
-- Nothing matching is said plainly
-- An unfinished condition keeps the tree and says what is missing
-- Clearing the filter removes its status
-- Clearing the filter restores the expansion the user chose
 
-## Main Window View Model
+## Main Window Failure
 
-- Starts empty without error
-- Successful import shows loaded model
-- A successful open is remembered
-- A failed open is not remembered
-- The empty state lists recent models
-- An outdated package is imported again from its ifc file
-- An outdated package without its ifc file explains what to do
-- Ifc file is imported into its own folder
-- Package is opened not imported
 - Failed import shows the failure with the file and reason
+- A failed open is not remembered
 - Try again opens the same file
-- Opening a package says opened and importing says imported
+- Picker failure shows error
 - Cancel returns to previously loaded model
 - Cancel after failure shows empty without stale error
-- Commands are disabled while importing
-- File dropped while picker is open is imported once
-- Open package button opens the picked folder
-- Picker failure shows error
-- Picker cancel does not import
-- Reveal shows the package in the file manager
+
+## Main Window Loaded Model
+
+- Saved package has no warning
 - Unsaved package shows a warning and hides reveal
 - Missing geometry shows a warning but keeps reveal
-- Saved package has no warning
+- Reveal shows the package in the file manager
 - Failed reveal shows the reason
 - Open in3 d starts the viewer with the package
 - Open in3 d is unavailable without geometry
 - Open in3 d is unavailable when the package was not saved
 - Missing viewer shows the reason
+
+## Main Window Opening
+
+- Starts empty without error
+- The empty state lists recent models
+- Successful import shows loaded model
+- A successful open is remembered
+- Ifc file is imported into its own folder
+- Package is opened not imported
+- Opening a package says opened and importing says imported
+- An outdated package is imported again from its ifc file
+- An outdated package without its ifc file explains what to do
+- Open package button opens the picked folder
+- Picker cancel does not import
+- File dropped while picker is open is imported once
+- Commands are disabled while importing
 
 ## Model Tree Builder
 
@@ -188,6 +187,16 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - No match returns empty
 - Filtering does not mutate the source tree
 - A node that matches keeps its whole subtree
+
+## Model Tree View Model
+
+- Selecting an element marks its storey and tells the screen
+- A property condition narrows the tree and counts the matches
+- Text and a property are combined
+- Nothing matching is said plainly
+- An unfinished condition keeps the tree and says what is missing
+- Clearing the filter removes its status
+- Clearing the filter restores the expansion the user chose
 
 ## Open Target
 
@@ -256,7 +265,7 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 
 ## Query Parser
 
-- A blank box is an empty query
+- A blank box has nothing to search
 - Plain words are one text condition
 - A tag is text
 - Equals compares a property value
