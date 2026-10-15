@@ -8,7 +8,7 @@ namespace Plumb.App.Platform.Viewer;
 /// </summary>
 public interface IViewerLink
 {
-    /// <summary>Raised when the person changes the selection in the viewer, on the thread that created the link.</summary>
+    /// <summary>Raised on the window's thread when the person changes the selection in the viewer.</summary>
     event EventHandler<ViewerSelection>? SelectionChanged;
 
     /// <summary>

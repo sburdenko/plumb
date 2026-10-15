@@ -18,15 +18,17 @@ public sealed class ViewerLink : IViewerLink, IDisposable
 
     private readonly IViewerStarter _starter;
     private readonly ILogger<ViewerLink> _logger;
-    private readonly SynchronizationContext? _owner = SynchronizationContext.Current;
+    private readonly Action<Action> _deliver;
     private readonly CancellationTokenSource _closing = new();
     private readonly Lock _gate = new();
     private TcpListener? _listener;
     private ViewerSession _session = new ViewerSession.None();
 
-    public ViewerLink(IViewerStarter starter, ILogger<ViewerLink> logger)
+    /// <param name="deliver">Runs a <see cref="SelectionChanged"/> notification on the thread that owns the window.</param>
+    public ViewerLink(IViewerStarter starter, Action<Action> deliver, ILogger<ViewerLink> logger)
     {
         _starter = starter;
+        _deliver = deliver;
         _logger = logger;
     }
 
@@ -287,17 +289,7 @@ public sealed class ViewerLink : IViewerLink, IDisposable
         }
     }
 
-    private void Report(ViewerSelection selection)
-    {
-        if (_owner == null)
-        {
-            SelectionChanged?.Invoke(this, selection);
-        }
-        else
-        {
-            _owner.Post(_ => SelectionChanged?.Invoke(this, selection), null);
-        }
-    }
+    private void Report(ViewerSelection selection) => _deliver(() => SelectionChanged?.Invoke(this, selection));
 
     private static string NewToken() => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
 
