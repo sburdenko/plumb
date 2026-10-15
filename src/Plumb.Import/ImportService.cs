@@ -54,9 +54,8 @@ public sealed class ImportService : IImportService
     {
         ArgumentNullException.ThrowIfNull(progress);
         _logger.LogInformation("Import started: {Path}", ifcPath);
-        var stopwatch = Stopwatch.StartNew();
-        var packagePath = PackageLayout.PackagePathFor(ifcPath, outputDirectory);
-        using var draft = new PackageDraft(packagePath, _logger);
+        var run = new ImportRun(ifcPath, PackageLayout.PackagePathFor(ifcPath, outputDirectory), Stopwatch.StartNew(), progress, cancellationToken);
+        using var draft = new PackageDraft(run.PackagePath, _logger);
 
         async Task<ImportResult> Import()
         {
@@ -67,18 +66,16 @@ public sealed class ImportService : IImportService
             }
 
             progress.Report(new ImportProgress(ImportStep.Snapshot, 0));
-            var prepared = PrepareDraft(ifcPath, draft, cancellationToken);
-            return prepared switch
+            return PrepareDraft(run, draft) switch
             {
-                PreparedDraft.Ready ready => await ImportIntoDraftAsync(ready, draft, packagePath, stopwatch, progress, cancellationToken)
-                    .ConfigureAwait(false),
-                PreparedDraft.Unavailable unavailable => ReadWithoutSaving(ifcPath, packagePath, unavailable.Reason, stopwatch, progress, cancellationToken),
+                PreparedDraft.Ready ready => await ImportIntoDraftAsync(run, ready, draft).ConfigureAwait(false),
+                PreparedDraft.Unavailable unavailable => ReadWithoutSaving(run, unavailable.Reason),
                 _ => throw new UnreachableException(),
             };
         }
 
         var result = await RunInBackgroundAsync(Import, ifcPath, ImportError.ParseFailed, cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation("Import finished in {Elapsed} ms: {Result}", stopwatch.ElapsedMilliseconds, Describe(result));
+        _logger.LogInformation("Import finished in {Elapsed} ms: {Result}", run.Clock.ElapsedMilliseconds, Describe(result));
         return result;
     }
 
@@ -88,7 +85,7 @@ public sealed class ImportService : IImportService
         ArgumentNullException.ThrowIfNull(progress);
         _logger.LogInformation("Opening package: {Path}", packagePath);
 
-        Task<ImportResult> Open()
+        ImportResult Open()
         {
             progress.Report(new ImportProgress(ImportStep.OpeningPackage, 0));
             PackageContents contents;
@@ -98,14 +95,14 @@ public sealed class ImportService : IImportService
             }
             catch (PackageOutdatedException ex)
             {
-                return Task.FromResult<ImportResult>(Outdated(packagePath, ex));
+                return Outdated(packagePath, ex);
             }
 
             progress.Report(new ImportProgress(ImportStep.OpeningPackage, 100));
 
             var importDuration = TimeSpan.FromMilliseconds(contents.Manifest.ImportDurationMs);
             var package = new PackageState.Saved(packagePath, contents.Geometry);
-            return Task.FromResult<ImportResult>(new ImportResult.Success(contents.Model, importDuration, package));
+            return new ImportResult.Success(contents.Model, importDuration, package);
         }
 
         var result = await RunInBackgroundAsync(Open, packagePath, ImportError.PackageInvalid, cancellationToken).ConfigureAwait(false);
@@ -117,19 +114,19 @@ public sealed class ImportService : IImportService
     /// Creates the draft folder and copies the source into it. Failing here only means the model cannot be
     /// saved (for example, a read-only folder); cancellation still cancels.
     /// </summary>
-    private PreparedDraft PrepareDraft(string ifcPath, PackageDraft draft, CancellationToken cancellationToken)
+    private PreparedDraft PrepareDraft(ImportRun run, PackageDraft draft)
     {
         try
         {
             Directory.CreateDirectory(draft.Location);
             Directory.CreateDirectory(draft.SourceFolder);
-            var snapshot = Path.Combine(draft.SourceFolder, Path.GetFileName(ifcPath));
-            var sha256 = SourceSnapshot.Copy(ifcPath, snapshot, cancellationToken);
+            var snapshot = Path.Combine(draft.SourceFolder, Path.GetFileName(run.IfcPath));
+            var sha256 = SourceSnapshot.Copy(run.IfcPath, snapshot, run.CancellationToken);
             return new PreparedDraft.Ready(snapshot, sha256);
         }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (!run.CancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "Cannot prepare a package draft next to {Path}", ifcPath);
+            _logger.LogWarning(ex, "Cannot prepare a package draft next to {Path}", run.IfcPath);
             return new PreparedDraft.Unavailable(ex);
         }
     }
@@ -138,22 +135,16 @@ public sealed class ImportService : IImportService
     /// Reads the model and converts its geometry at the same time, both from the snapshot, then saves the package.
     /// If reading fails or is cancelled, the conversion is stopped and awaited before the error propagates.
     /// </summary>
-    private async Task<ImportResult> ImportIntoDraftAsync(
-        PreparedDraft.Ready source,
-        PackageDraft draft,
-        string packagePath,
-        Stopwatch stopwatch,
-        IProgress<ImportProgress> progress,
-        CancellationToken cancellationToken)
+    private async Task<ImportResult> ImportIntoDraftAsync(ImportRun run, PreparedDraft.Ready source, PackageDraft draft)
     {
-        using var stopGeometry = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var stopGeometry = CancellationTokenSource.CreateLinkedTokenSource(run.CancellationToken);
         var glbPath = Path.Combine(draft.Location, PackageLayout.GeometryFile);
         var geometryTask = _geometry.ConvertAsync(source.SnapshotPath, glbPath, stopGeometry.Token);
 
         IfcModelData model;
         try
         {
-            model = IfcModelReader.Read(source.SnapshotPath, new StepProgress(progress, ImportStep.ReadingModel, 0, ReadEnd), cancellationToken);
+            model = IfcModelReader.Read(source.SnapshotPath, new StepProgress(run.Progress, ImportStep.ReadingModel, 0, ReadEnd), run.CancellationToken);
         }
         catch
         {
@@ -162,63 +153,50 @@ public sealed class ImportService : IImportService
             throw;
         }
 
-        progress.Report(new ImportProgress(ImportStep.ConvertingGeometry, ReadEnd));
+        run.Progress.Report(new ImportProgress(ImportStep.ConvertingGeometry, ReadEnd));
         var geometry = await geometryTask.ConfigureAwait(false);
         LogGeometry(geometry, source.SnapshotPath);
 
-        var manifest = CreateManifest(model, source.Sha256, stopwatch.Elapsed, geometry);
-        var package = Save(model, manifest, geometry, draft, packagePath, progress, cancellationToken);
-        var importDuration = package is PackageState.Saved ? TimeSpan.FromMilliseconds(manifest.ImportDurationMs) : stopwatch.Elapsed;
+        var manifest = CreateManifest(model, source.Sha256, run.Clock.Elapsed, geometry);
+        var package = Save(run, model, manifest, draft);
+        var importDuration = package is PackageState.Saved ? TimeSpan.FromMilliseconds(manifest.ImportDurationMs) : run.Clock.Elapsed;
         return new ImportResult.Success(model, importDuration, package);
     }
 
     /// <summary>
     /// Writes the database, index and manifest into the draft and publishes it.
     /// </summary>
-    private PackageState Save(
-        IfcModelData model,
-        PackageManifest manifest,
-        GeometryState geometry,
-        PackageDraft draft,
-        string packagePath,
-        IProgress<ImportProgress> progress,
-        CancellationToken cancellationToken)
+    private PackageState Save(ImportRun run, IfcModelData model, PackageManifest manifest, PackageDraft draft)
     {
         try
         {
-            progress.Report(new ImportProgress(ImportStep.WritingPackage, GeometryEnd));
-            var writeProgress = new StepProgress(progress, ImportStep.WritingPackage, GeometryEnd, WriteEnd);
-            PackageWriter.Write(draft.Location, model, manifest, writeProgress, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
+            run.Progress.Report(new ImportProgress(ImportStep.WritingPackage, GeometryEnd));
+            var writeProgress = new StepProgress(run.Progress, ImportStep.WritingPackage, GeometryEnd, WriteEnd);
+            PackageWriter.Write(draft.Location, model, manifest, writeProgress, run.CancellationToken);
+            run.CancellationToken.ThrowIfCancellationRequested();
 
-            progress.Report(new ImportProgress(ImportStep.Finalizing, WriteEnd));
+            run.Progress.Report(new ImportProgress(ImportStep.Finalizing, WriteEnd));
             draft.Publish();
-            progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
-            return new PackageState.Saved(packagePath, PackageReader.GeometryOf(packagePath, manifest));
+            run.Progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
+            return new PackageState.Saved(run.PackagePath, PackageReader.GeometryOf(run.PackagePath, manifest));
         }
-        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception ex) when (!run.CancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "Model loaded but not saved to {Package}", packagePath);
-            progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
-            return new PackageState.NotSaved(DescribeSaveFailure(packagePath, ex));
+            _logger.LogWarning(ex, "Model loaded but not saved to {Package}", run.PackagePath);
+            run.Progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
+            return new PackageState.NotSaved(DescribeSaveFailure(run.PackagePath, ex));
         }
     }
 
     /// <summary>
     /// No draft could be prepared, so the model is read straight from the source and shown without a package.
     /// </summary>
-    private static ImportResult ReadWithoutSaving(
-        string ifcPath,
-        string packagePath,
-        Exception reason,
-        Stopwatch stopwatch,
-        IProgress<ImportProgress> progress,
-        CancellationToken cancellationToken)
+    private static ImportResult ReadWithoutSaving(ImportRun run, Exception reason)
     {
-        var model = IfcModelReader.Read(ifcPath, new StepProgress(progress, ImportStep.ReadingModel, 0, ReadEnd), cancellationToken);
-        progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
-        var package = new PackageState.NotSaved(DescribeSaveFailure(packagePath, reason));
-        return new ImportResult.Success(model, stopwatch.Elapsed, package);
+        var model = IfcModelReader.Read(run.IfcPath, new StepProgress(run.Progress, ImportStep.ReadingModel, 0, ReadEnd), run.CancellationToken);
+        run.Progress.Report(new ImportProgress(ImportStep.Finalizing, 100));
+        var package = new PackageState.NotSaved(DescribeSaveFailure(run.PackagePath, reason));
+        return new ImportResult.Success(model, run.Clock.Elapsed, package);
     }
 
     private async Task ObserveAsync(Task<GeometryState> geometryTask)
@@ -269,12 +247,18 @@ public sealed class ImportService : IImportService
             notBuilt?.Detail);
     }
 
+    private Task<ImportResult> RunInBackgroundAsync(Func<Task<ImportResult>> work, string path, ImportError unknownError, CancellationToken cancellationToken) =>
+        MapFailuresAsync(() => Task.Run(work, cancellationToken), path, unknownError, cancellationToken);
+
+    private Task<ImportResult> RunInBackgroundAsync(Func<ImportResult> work, string path, ImportError unknownError, CancellationToken cancellationToken) =>
+        MapFailuresAsync(() => Task.Run(work, cancellationToken), path, unknownError, cancellationToken);
+
     /// <summary>
-    /// Runs the work off the caller's thread and maps every exception to a failure.
+    /// Starts the work and maps every exception it throws to a failure.
     /// </summary>
     /// <param name="unknownError">The error reported for exceptions that are not I/O or cancellation.</param>
-    private async Task<ImportResult> RunInBackgroundAsync(
-        Func<Task<ImportResult>> work,
+    private async Task<ImportResult> MapFailuresAsync(
+        Func<Task<ImportResult>> start,
         string path,
         ImportError unknownError,
         CancellationToken cancellationToken)
@@ -282,7 +266,7 @@ public sealed class ImportService : IImportService
         var name = Path.GetFileName(path);
         try
         {
-            return await Task.Run(work, cancellationToken).ConfigureAwait(false);
+            return await start().ConfigureAwait(false);
         }
         catch (Exception) when (cancellationToken.IsCancellationRequested)
         {
@@ -324,6 +308,14 @@ public sealed class ImportService : IImportService
         ImportResult.Failure failure => $"{failure.Error}: {failure.Message}",
         _ => throw new UnreachableException(),
     };
+
+    /// <summary>One import of one IFC file: where its package goes, how long it has run, where progress goes.</summary>
+    private sealed record ImportRun(
+        string IfcPath,
+        string PackagePath,
+        Stopwatch Clock,
+        IProgress<ImportProgress> Progress,
+        CancellationToken CancellationToken);
 
     /// <summary>Whether the draft folder and the source snapshot could be created.</summary>
     private abstract record PreparedDraft
