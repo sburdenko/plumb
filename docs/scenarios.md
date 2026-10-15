@@ -124,6 +124,17 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - An older package is outdated and points to its ifc file
 - An older package whose ifc file is gone has no source path
 
+## Link Protocol
+
+- Every example the viewer also checks reads and writes back unchanged
+- Hello carries the version and token
+- Select carries the global id
+- Clear has no argument
+- Anything else is unknown so a newer peer can add messages
+- A line ending is not part of the message
+- A global id that would break the line cannot be written
+- An unknown message cannot be written
+
 ## Loaded View Model
 
 - Header and status describe the model
@@ -131,6 +142,9 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Missing geometry explains it and offers reimport
 - Unsaved package marks both status items as problems
 - Selecting an element marks its storey and fills the details
+- Selecting an element tells the viewer of this package
+- An unsaved model has no viewer to tell
+- Open in3 d starts the viewer on the selected element
 
 ## Main Window Failure
 
@@ -152,6 +166,9 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Open in3 d is unavailable without geometry
 - Open in3 d is unavailable when the package was not saved
 - Missing viewer shows the reason
+- Selecting in the viewer selects the element in the tree
+- A selection from the viewer of another model is ignored
+- A selection from the viewer before any model is loaded is ignored
 
 ## Main Window Opening
 
@@ -197,6 +214,10 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - An unfinished condition keeps the tree and says what is missing
 - Clearing the filter removes its status
 - Clearing the filter restores the expansion the user chose
+- Selecting an element by id opens the rows above it
+- An element in the search result keeps the search
+- An element outside the search result clears the search to show it
+- Nothing or an element not in the tree clears the selection
 
 ## Open Target
 
@@ -324,7 +345,28 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 
 - The window shows empty importing failed or loaded
 
-## Viewer Launcher
+## Viewer Link
+
+- Opening starts the viewer with an invitation
+- Every viewer gets its own token
+- A failed start reports the reason
+- A linked viewer receives the selection plumb had when it opened
+- A selection made while the viewer starts is sent once it links
+- Selections made in plumb reach the viewer
+- A selection made in the viewer is reported with its package
+- Clearing the selection in the viewer is reported
+- What the viewer reported is not sent back to it
+- A selection in another model is not sent
+- Unknown lines are ignored
+- A wrong token is turned away
+- Another protocol version is turned away
+- Opening the same model again brings the running viewer forward
+- Opening again while the viewer is still starting does not start a second one
+- Opening after the viewer was closed starts a new one
+- Opening another model lets go of the first viewer
+- After the viewer disconnects opening starts a new one
+
+## Viewer Starter
 
 - Missing location has no viewer
 - Executable path is used as is

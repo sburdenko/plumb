@@ -41,7 +41,7 @@ Desktop viewer for IFC building models. Open an `.ifc` file, browse its spatial 
 - Shows instance and type property sets and quantity sets for the selected element. Instance values override type values.
 - Resolves units from the project's unit assignment when a property does not specify its own.
 - Searches the tree by element name, IFC type, GlobalId or tag, and by property: `FireRating = REI 90`, `Size ~ 1150` (contains), `Area > 10`. Conditions are joined with `;`, so `duct; Size = 1150x400` finds ducts of that size. ⌘F (Ctrl+F on Windows and Linux) jumps to the search box. A click on the GlobalId copies it.
-- Opens the package in a Unity viewer: orbit, pan and zoom, click an element to highlight it and see its name, type, storey and GlobalId, press F to frame it. Colours come from the file's surface styles; geometry without a style, which is most of an MEP model, is coloured by its IFC class.
+- Opens the package in a Unity viewer: orbit, pan and zoom, click an element to highlight it and see its name, type, storey and GlobalId, press F to frame it. The viewer stays linked to Plumb: an element picked in 3D is selected in the tree with its properties, and one selected in the tree is highlighted and framed in 3D. Colours come from the file's surface styles; geometry without a style, which is most of an MEP model, is coloured by its IFC class.
 - Converts the geometry to binary glTF (`model.glb`) with IfcOpenShell's IfcConvert. Every mesh node is named by its IFC GlobalId, so a 3D viewer can map a click back to the element and its properties.
 - Saves every import as a `.plumb` package next to the source file. Opening the package skips IFC parsing entirely. When that folder is read-only, the model still opens and the app shows why it was not saved.
 - Imports in the background, showing each step of the pipeline with its time, and can be cancelled at any point. A cancelled or failed import never leaves a half-written package behind.
@@ -124,15 +124,18 @@ Every project does one job and references only what that job needs. Each box dep
 
 xBIM, IfcConvert and SQLite each appear in exactly one project, so any of them can be replaced without touching the rest.
 
-The 3D viewer is a second program, a Unity 6 project in `viewer/`. The two programs share nothing but the package folder:
+The 3D viewer is a second program, a Unity 6 project in `viewer/`. It reads the package folder, and a loopback socket keeps the two selections in step:
 
 ```
-Plumb  --- Open in 3D: PlumbViewer --package Duplex.plumb --->  Plumb Viewer (Unity)
-                                                                  reads model.glb with glTFast
-                                                                  reads elements.json for labels
+Plumb  --- Open in 3D: PlumbViewer --package Duplex.plumb --link <port> --->  Plumb Viewer (Unity)
+                                                                                reads model.glb with glTFast
+                                                                                reads elements.json for labels
+       <--------------- hello 1 <token>, then select <GlobalId> / clear ---->
 ```
 
 A click casts a ray, takes the name of the glTF node it hits, which is the element's IFC GlobalId, and looks that id up in `elements.json`. The viewer never opens SQLite.
+
+The link is one line per message, described in `Plumb.Core/Link` and copied in the viewer; `tests/link-examples.txt` holds lines both test suites read, so the copies cannot drift apart. Plumb listens on `127.0.0.1` only and passes a one-time token through the viewer's environment, so no other process can join. Each side remembers the selection the two already agree on, which stops a selection from echoing back. If the viewer is closed, or never connects, both programs keep working on their own, and Open in 3D for the same model brings the running viewer forward instead of starting another.
 
 ### Import pipeline
 
@@ -218,7 +221,7 @@ dotnet test
 
 The suite imports the Duplex architecture model and checks the tree, storey order, units and property integrity. It writes and reopens packages, replaces them, cancels mid-write and verifies that no draft is left behind. With the real IfcConvert it checks that every glTF node is an element of the package, that a timeout or cancel stops the process, and that a missing converter still loads the model.
 
-The viewer has its own Unity EditMode tests for argument parsing, the element index and click detection:
+The viewer has its own Unity EditMode tests for argument parsing, the element index, click detection and the link to Plumb:
 
 ```bash
 Unity -batchmode -projectPath viewer -runTests -testPlatform EditMode -testResults viewer-tests.xml
