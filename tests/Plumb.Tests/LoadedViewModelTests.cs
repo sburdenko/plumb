@@ -98,9 +98,46 @@ public sealed class LoadedViewModelTests
         Assert.That(loaded.SelectedElement.Groups.SelectMany(g => g.Rows).Select(r => r.FullValue), Is.EquivalentTo(new[] { "true", "4.57 m" }));
     }
 
-    private static LoadedViewModel Create(PackageState package) =>
+    [Test]
+    public void SelectingAnElementTellsTheViewerOfThisPackage()
+    {
+        var viewer = new FakeViewerLink();
+        var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()), viewer);
+        var level1 = loaded.Tree.Nodes.Single().Children.Single().Children.Single(n => n.Title == "Level 1");
+        var typeGroup = level1.Children.Single();
+
+        loaded.Tree.SelectedNode = typeGroup.Children.Single();
+        loaded.Tree.SelectedNode = typeGroup;
+
+        Assert.That(viewer.Shown, Is.EqualTo(new (string, string?)[] { ("/m/House.plumb", "W1"), ("/m/House.plumb", null) }));
+    }
+
+    [Test]
+    public void AnUnsavedModelHasNoViewerToTell()
+    {
+        var viewer = new FakeViewerLink();
+        var loaded = Create(new PackageState.NotSaved("read-only"), viewer);
+
+        loaded.Tree.SelectedNode = loaded.Tree.Nodes.Single();
+
+        Assert.That(viewer.Shown, Is.Empty);
+    }
+
+    [Test]
+    public void OpenIn3DStartsTheViewerOnTheSelectedElement()
+    {
+        var viewer = new FakeViewerLink();
+        var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()), viewer);
+        loaded.Tree.SelectedNode = loaded.Tree.Nodes.Single().Children.Single().Children.Single(n => n.Title == "Level 2");
+
+        loaded.OpenIn3DCommand.Execute(null);
+
+        Assert.That(viewer.Opens, Is.EqualTo(new (string, string?)[] { ("/m/House.plumb", "L2") }));
+    }
+
+    private static LoadedViewModel Create(PackageState package, FakeViewerLink? viewer = null) =>
         new(new LoadedModel(new ImportResult.Success(Model, TimeSpan.FromSeconds(3), package), "/m/House.ifc", OpenedPackage: false, TimeSpan.FromMilliseconds(1234)),
-            Open, new PlatformServices(new NoPicker(), new NoRevealer(), new NoViewer(), new FakeClipboard()), TimeProvider.System);
+            Open, new PlatformServices(new NoPicker(), new NoRevealer(), viewer ?? new FakeViewerLink(), new FakeClipboard()), TimeProvider.System);
 
     private sealed class NoPicker : IFilePickerService
     {
@@ -120,12 +157,4 @@ public sealed class LoadedViewModelTests
         }
     }
 
-    private sealed class NoViewer : IViewerLauncher
-    {
-        public bool TryOpen(string packagePath, [NotNullWhen(false)] out string? error)
-        {
-            error = null;
-            return true;
-        }
-    }
 }

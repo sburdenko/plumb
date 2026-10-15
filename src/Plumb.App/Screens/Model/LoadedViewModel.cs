@@ -108,7 +108,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     {
         if (_package is PackageState.Saved saved)
         {
-            ActionError = _platform.Viewer.TryOpen(saved.Path, out var error) ? null : error;
+            ActionError = _platform.Viewer.TryOpen(saved.Path, Tree.SelectedNode?.Element?.GlobalId, out var error) ? null : error;
         }
     }
 
@@ -123,6 +123,11 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     private void OnSelectionChanged(TreeNodeViewModel? node)
     {
+        if (_package is PackageState.Saved saved)
+        {
+            _platform.Viewer.ShowSelection(saved.Path, node?.Element?.GlobalId);
+        }
+
         SelectedName = node?.Element != null ? node.Label : null;
         SelectedElement = node?.Element is { } element
             ? new ElementDetailsViewModel(

@@ -34,7 +34,7 @@ internal sealed class MainWindowHarness
 
     public FakeRevealer Revealer { get; } = new();
 
-    public FakeViewerLauncher Viewer { get; } = new();
+    public FakeViewerLink Viewer { get; } = new();
 
     public FakeRecentModelStore Recent { get; } = new();
 

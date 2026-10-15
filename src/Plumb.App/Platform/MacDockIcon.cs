@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static Plumb.App.Platform.MacRuntime;
 
 namespace Plumb.App.Platform;
 
@@ -10,8 +11,6 @@ namespace Plumb.App.Platform;
 [SupportedOSPlatform("macos")]
 internal static class MacDockIcon
 {
-    private const string ObjCRuntime = "/usr/lib/libobjc.A.dylib";
-
     public static bool RunsInsideBundle =>
         AppContext.BaseDirectory.Contains(".app/Contents/MacOS", StringComparison.OrdinalIgnoreCase);
 
@@ -40,23 +39,4 @@ internal static class MacDockIcon
             Marshal.FreeHGlobal(buffer);
         }
     }
-
-    private static IntPtr Class(string name) => objc_getClass(name);
-
-    private static IntPtr Selector(string name) => sel_registerName(name);
-
-    [DllImport(ObjCRuntime)]
-    private static extern IntPtr objc_getClass(string name);
-
-    [DllImport(ObjCRuntime)]
-    private static extern IntPtr sel_registerName(string name);
-
-    [DllImport(ObjCRuntime, EntryPoint = "objc_msgSend")]
-    private static extern IntPtr Send(IntPtr receiver, IntPtr selector);
-
-    [DllImport(ObjCRuntime, EntryPoint = "objc_msgSend")]
-    private static extern IntPtr Send(IntPtr receiver, IntPtr selector, IntPtr argument);
-
-    [DllImport(ObjCRuntime, EntryPoint = "objc_msgSend")]
-    private static extern IntPtr Send(IntPtr receiver, IntPtr selector, IntPtr bytes, nuint length);
 }
