@@ -26,7 +26,7 @@ Each part is a separate project in `src/`. A part may use only the parts listed 
 | **Import** | Runs the steps in the right order: check the file, copy it, read it and build geometry at the same time, save, publish. Turns every failure into a result the window can show. | Core, Ifc, Geometry, Package | none |
 | **App** | The window: drag and drop, tree, property panel, recent models, menus. Talks only to Import. | Core, Import | Avalonia |
 
-The viewer in `viewer/` is a separate program. It shares nothing with the parts above except the files in the `.plumb` folder.
+The viewer in `viewer/` is a separate program. It reads the files in the `.plumb` folder and shares nothing else with the parts above except the link: one line per message over a socket on this computer, saying which element is selected. The lines are described in Core and copied in the viewer.
 
 ## Rules the code follows
 
@@ -55,4 +55,5 @@ The viewer in `viewer/` is a separate program. It shares nothing with the parts 
 | **SQLite** | A small database kept in one file; the package stores elements and properties in it. |
 | **Avalonia** | The toolkit that draws Plumb's window on macOS, Windows and Linux. |
 | **Viewer** | The second program, made with Unity, that shows the 3D shape and lets you click elements. |
+| **Link** | The connection Plumb opens to the viewer it started, so that selecting an element in one selects it in the other. |
 | **Draft** | The hidden folder where an import writes its files before renaming it to the final package, so a failed import never leaves a half-finished package. |
