@@ -31,7 +31,10 @@ public sealed partial class App : Application
             SetDockIcon(logger);
 
             var window = new MainWindow();
-            var viewer = new ViewerLink(new ViewerStarter(loggerFactory.CreateLogger<ViewerStarter>()), loggerFactory.CreateLogger<ViewerLink>());
+            var viewer = new ViewerLink(
+                new ViewerStarter(loggerFactory.CreateLogger<ViewerStarter>()),
+                notify => Dispatcher.UIThread.Post(notify),
+                loggerFactory.CreateLogger<ViewerLink>());
             var viewModel = new MainWindowViewModel(
                 ImportService.CreateDefault(loggerFactory),
                 new PlatformServices(

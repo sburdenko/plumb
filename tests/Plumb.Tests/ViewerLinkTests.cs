@@ -19,7 +19,7 @@ public sealed class ViewerLinkTests
     public void CreateLink()
     {
         _starter = new FakeViewerStarter();
-        _link = new ViewerLink(_starter, NullLogger<ViewerLink>.Instance);
+        _link = new ViewerLink(_starter, notify => notify(), NullLogger<ViewerLink>.Instance);
     }
 
     [TearDown]
