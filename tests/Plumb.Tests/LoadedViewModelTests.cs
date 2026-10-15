@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Plumb.App.Platform;
 using Plumb.App.Screens.Model;
-using Plumb.App.Screens.Model.Filter;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
 using Plumb.App.Shell;
@@ -86,11 +85,11 @@ public sealed class LoadedViewModelTests
     public void SelectingAnElementMarksItsStoreyAndFillsTheDetails()
     {
         var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()));
-        var building = loaded.Nodes.Single().Children.Single();
+        var building = loaded.Tree.Nodes.Single().Children.Single();
         var level1 = building.Children.Single(n => n.Title == "Level 1");
         var level2 = building.Children.Single(n => n.Title == "Level 2");
 
-        loaded.SelectedNode = level1.Children.Single().Children.Single();
+        loaded.Tree.SelectedNode = level1.Children.Single().Children.Single();
 
         Assert.That(level1.IsActiveStorey, Is.True);
         Assert.That(level2.IsActiveStorey, Is.False);
@@ -98,88 +97,6 @@ public sealed class LoadedViewModelTests
         Assert.That(loaded.SelectedElement!.Kicker, Is.EqualTo("IFCWALL"));
         Assert.That(loaded.SelectedElement.Groups.SelectMany(g => g.Rows).Select(r => r.FullValue), Is.EquivalentTo(new[] { "true", "4.57 m" }));
     }
-
-    [Test]
-    public void APropertyConditionNarrowsTheTreeAndCountsTheMatches()
-    {
-        var loaded = Create(new PackageState.NotSaved("x"));
-
-        loaded.Filter = "Length > 4";
-
-        var labels = Flatten(loaded.Nodes).Select(n => n.Label).ToList();
-        Assert.That(labels, Does.Contain("Wall A"));
-        Assert.That(labels, Does.Not.Contain("Door B"));
-        Assert.That(loaded.FilterStatus, Is.TypeOf<FilterMatchedViewModel>());
-        Assert.That(loaded.FilterStatus!.Text, Is.EqualTo("1 element matches"));
-    }
-
-    [Test]
-    public void TextAndAPropertyAreCombined()
-    {
-        var loaded = Create(new PackageState.NotSaved("x"));
-
-        loaded.Filter = "door; FireRating = REI 30";
-
-        var labels = Flatten(loaded.Nodes).Select(n => n.Label).ToList();
-        Assert.That(labels, Does.Contain("Door B"));
-        Assert.That(labels, Does.Not.Contain("Wall A"));
-    }
-
-    [Test]
-    public void NothingMatchingIsSaidPlainly()
-    {
-        var loaded = Create(new PackageState.NotSaved("x"));
-
-        loaded.Filter = "nothing like this";
-
-        Assert.That(loaded.Nodes, Is.Empty);
-        Assert.That(loaded.FilterStatus!.Text, Is.EqualTo("No element matches"));
-    }
-
-    [Test]
-    public void AnUnfinishedConditionKeepsTheTreeAndSaysWhatIsMissing()
-    {
-        var loaded = Create(new PackageState.NotSaved("x"));
-        loaded.Filter = "Wall";
-        var before = loaded.Nodes;
-
-        loaded.Filter = "Wall; Length >";
-
-        Assert.That(loaded.Nodes, Is.SameAs(before));
-        Assert.That(loaded.FilterStatus, Is.TypeOf<FilterRejectedViewModel>());
-        Assert.That(loaded.FilterStatus!.Text, Does.Contain("number"));
-    }
-
-    [Test]
-    public void ClearingTheFilterRemovesItsStatus()
-    {
-        var loaded = Create(new PackageState.NotSaved("x"));
-        loaded.Filter = "Length > 4";
-
-        loaded.ClearFilterCommand.Execute(null);
-
-        Assert.That(loaded.FilterStatus, Is.Null);
-        Assert.That(loaded.Nodes, Is.Not.Empty);
-    }
-
-    [Test]
-    public void ClearingTheFilterRestoresTheExpansionTheUserChose()
-    {
-        var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()));
-        Storey(loaded, "Level 2").IsExpanded = true;
-
-        loaded.Filter = "Wall";
-        loaded.ClearFilterCommand.Execute(null);
-
-        Assert.That(Storey(loaded, "Level 2").IsExpanded, Is.True);
-        Assert.That(Storey(loaded, "Level 1").IsExpanded, Is.False);
-    }
-
-    private static IEnumerable<TreeNodeViewModel> Flatten(IEnumerable<TreeNodeViewModel> nodes) =>
-        nodes.SelectMany(node => Flatten(node.Children).Prepend(node));
-
-    private static TreeNodeViewModel Storey(LoadedViewModel loaded, string name) =>
-        loaded.Nodes.Single().Children.Single().Children.Single(n => n.Title == name);
 
     private static LoadedViewModel Create(PackageState package) =>
         new(new LoadedModel(new ImportResult.Success(Model, TimeSpan.FromSeconds(3), package), "/m/House.ifc", OpenedPackage: false, TimeSpan.FromMilliseconds(1234)),
