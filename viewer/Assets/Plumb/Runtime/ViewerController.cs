@@ -8,16 +8,14 @@ namespace Plumb.Viewer
 {
     /// <summary>
     /// Loads a <c>.plumb</c> package and lets the user pick elements. Driven from <see cref="Update"/> as a
-    /// state machine: glTFast's loading tasks are polled each frame rather than awaited.
+    /// state machine: glTFast's loading tasks are polled each frame rather than awaited. Screenshots and benchmarks
+    /// are a <see cref="ViewerAutomation"/>, told how loading goes and stepped every frame.
     /// </summary>
-    public sealed class ViewerController : MonoBehaviour
+    public sealed class ViewerController : MonoBehaviour, IViewerHost
     {
         private const string GeometryFile = "model.glb";
         private const string ElementIndexFile = "elements.json";
-        private const int FramesBeforeScreenshot = 5;
-        private const int FramesBeforeQuit = 5;
         private const double ColliderBudgetMilliseconds = 5;
-        private const float BenchmarkDegreesPerSecond = 30f;
 
         private readonly ClickGesture _click = new ClickGesture();
         private readonly SelectionHighlight _highlight = new SelectionHighlight();
@@ -34,11 +32,7 @@ namespace Plumb.Viewer
         private string _packageName;
         private ColliderBuilder _colliders;
         private ElementInfo _selected;
-        private int _screenshotCountdown = -1;
-        private int _quitCountdown = -1;
-
-        // Set only with --benchmark; null in normal use.
-        private BenchmarkRecorder _benchmark;
+        private ViewerAutomation _automation = new NoAutomation();
 
         private enum ViewerState
         {
@@ -55,6 +49,8 @@ namespace Plumb.Viewer
             _camera = viewCamera;
             _orbit = orbit;
             _orbit.IsOverUi = IsPointerOverUi;
+            _automation = ViewerAutomation.For(arguments);
+            _automation.Begin(this, Now);
             StartLoading();
         }
 
@@ -62,14 +58,6 @@ namespace Plumb.Viewer
 
         private void StartLoading()
         {
-            if (_arguments.RunsBenchmark)
-            {
-                // Uncapped, so the frame rate shows what the model costs rather than the display's refresh rate.
-                QualitySettings.vSyncCount = 0;
-                Application.targetFrameRate = -1;
-                _benchmark = new BenchmarkRecorder(Now);
-            }
-
             if (!_arguments.HasPackage)
             {
                 Finish(ViewerState.NoPackage, "No package. In Plumb, open a model and choose Open in 3D.");
@@ -121,11 +109,10 @@ namespace Plumb.Viewer
                 case ViewerState.Ready:
                     BuildColliders();
                     HandleInput();
-                    AdvanceBenchmark();
                     break;
             }
 
-            AdvanceScreenshot();
+            _automation.Update(this, Time.unscaledDeltaTime);
         }
 
         private void PollLoading()
@@ -141,7 +128,7 @@ namespace Plumb.Viewer
                 return;
             }
 
-            _benchmark?.ModelRead(Now);
+            _automation.ModelRead(Now);
             _model = new GameObject("Model").transform;
             _pending = _import.InstantiateMainSceneAsync(_model);
             _state = ViewerState.BuildingScene;
@@ -161,11 +148,11 @@ namespace Plumb.Viewer
             }
 
             ModelColors.Apply(_model, _index);
-            _benchmark?.SceneShown(Now);
+            _automation.SceneShown(Now);
             _colliders = new ColliderBuilder(_model.GetComponentsInChildren<MeshFilter>());
             if (_colliders.Done)
             {
-                _benchmark?.CollidersReady(Now);
+                _automation.Ready(this, Now);
             }
             if (RendererBounds.TryEncapsulate(_model.GetComponentsInChildren<Renderer>(), out var scene))
             {
@@ -188,32 +175,11 @@ namespace Plumb.Viewer
             _message = _colliders.Done ? null : $"Preparing selection… {_colliders.Progress:P0}";
             if (_colliders.Done)
             {
-                _benchmark?.CollidersReady(Now);
-            }
-
-            if (_colliders.Done && _arguments.TakesScreenshot)
-            {
-                _screenshotCountdown = FramesBeforeScreenshot;
+                _automation.Ready(this, Now);
             }
         }
 
-        /// <summary>Once every element is clickable, turns the camera and samples frames until the run is complete.</summary>
-        private void AdvanceBenchmark()
-        {
-            if (_benchmark == null || !_colliders.Done)
-            {
-                return;
-            }
-
-            _orbit.Turn(BenchmarkDegreesPerSecond * Time.unscaledDeltaTime);
-            if (_benchmark.AddFrame(Time.unscaledDeltaTime))
-            {
-                var (meshes, triangles) = CountGeometry();
-                EndBenchmark(_benchmark.Report(meshes, triangles));
-            }
-        }
-
-        private (int Meshes, long Triangles) CountGeometry()
+        (int Meshes, long Triangles) IViewerHost.CountGeometry()
         {
             var meshes = 0;
             var indices = 0L;
@@ -235,20 +201,29 @@ namespace Plumb.Viewer
             return (meshes, indices / 3);
         }
 
-        private void EndBenchmark(string result)
+        void IViewerHost.CaptureScreenshot(string path) => ScreenCapture.CaptureScreenshot(path);
+
+        void IViewerHost.WriteReport(string path, string text)
         {
             try
             {
-                File.WriteAllText(_arguments.BenchmarkPath, result + Environment.NewLine);
+                File.WriteAllText(path, text + Environment.NewLine);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
-                Debug.LogError($"Cannot write the benchmark to {_arguments.BenchmarkPath}: {ex.Message}");
+                Debug.LogError($"Cannot write the report to {path}: {ex.Message}");
             }
-
-            _benchmark = null;
-            _quitCountdown = FramesBeforeQuit;
         }
+
+        void IViewerHost.TurnCamera(float degrees) => _orbit.Turn(degrees);
+
+        void IViewerHost.UncapFrameRate()
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
+        }
+
+        void IViewerHost.Quit() => Application.Quit();
 
         private void HandleInput()
         {
@@ -332,15 +307,10 @@ namespace Plumb.Viewer
             _message = message;
             _orbit.Enabled = state == ViewerState.Ready;
 
-            if (_benchmark != null && state != ViewerState.Ready)
+            // A ready viewer reports Ready once every element is clickable; see BuildColliders.
+            if (state != ViewerState.Ready)
             {
-                EndBenchmark($"| failed: {message} |");
-            }
-
-            // A ready viewer is captured once every element is clickable; see BuildColliders.
-            if (_arguments.TakesScreenshot && state != ViewerState.Ready)
-            {
-                _screenshotCountdown = FramesBeforeScreenshot;
+                _automation.Stopped(this, message);
             }
         }
 
@@ -349,19 +319,6 @@ namespace Plumb.Viewer
             pointer.y > Screen.height - ViewerChrome.TopBarHeight
             || pointer.y < ViewerChrome.StatusBarHeight
             || (_selected != null && ElementPanel.Contains(pointer, Screen.height));
-
-        private void AdvanceScreenshot()
-        {
-            if (_screenshotCountdown > 0 && --_screenshotCountdown == 0)
-            {
-                ScreenCapture.CaptureScreenshot(_arguments.ScreenshotPath);
-                _quitCountdown = FramesBeforeQuit;
-            }
-            else if (_quitCountdown > 0 && --_quitCountdown == 0)
-            {
-                Application.Quit();
-            }
-        }
 
         private static bool Succeeded(Task<bool> task) => task.Status == TaskStatus.RanToCompletion && task.Result;
 
