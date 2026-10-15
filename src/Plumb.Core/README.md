@@ -1,6 +1,6 @@
 # Plumb.Core
 
-The vocabulary shared by every other project: element and property records, import results, package and geometry states, the element tree and its filter.
+The vocabulary shared by every other project: element and property records, import results, package and geometry states, the element tree, and the search that finds elements by text and by property.
 
 **May:** define records, enums, closed state hierarchies and pure functions over them.
 

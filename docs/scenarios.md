@@ -32,6 +32,20 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - The tag is shown after the global id
 - Instance groups come first and every group says where its values come from
 
+## Element Search
+
+- An empty query matches every element
+- Text matches name class global id and tag
+- Equals ignores case and the source of the value
+- The property name ignores case
+- Equals compares numbers as numbers
+- Contains looks inside the value
+- A number condition skips values that are not numbers
+- Numbers are compared by the operator
+- Every condition must hold
+- A property no element has matches nothing
+- A cancelled search stops
+
 ## Geometry Pipeline
 
 - Every geometry node is an element of the package
@@ -118,6 +132,11 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Missing geometry explains it and offers reimport
 - Unsaved package marks both status items as problems
 - Selecting an element marks its storey and fills the details
+- A property condition narrows the tree and counts the matches
+- Text and a property are combined
+- Nothing matching is said plainly
+- An unfinished condition keeps the tree and says what is missing
+- Clearing the filter removes its status
 - Clearing the filter restores the expansion the user chose
 
 ## Main Window View Model
@@ -161,7 +180,6 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 
 ## Model Tree Filter
 
-- Blank query returns tree unchanged
 - Name match keeps ancestors and updates group counts
 - Match is case insensitive across branches
 - Type match keeps the whole group
@@ -169,6 +187,7 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Matches tag
 - No match returns empty
 - Filtering does not mutate the source tree
+- A node that matches keeps its whole subtree
 
 ## Open Target
 
@@ -234,6 +253,21 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Instance value wins over type value
 - Type only properties are inherited
 - An instance value keeps its source when it overrides the type
+
+## Query Parser
+
+- A blank box is an empty query
+- Plain words are one text condition
+- A tag is text
+- Equals compares a property value
+- A tilde searches inside a value
+- Numbers are compared with an operator
+- An operator needs no spaces and a name may have some
+- Numbers use a dot and a minus sign
+- A semicolon joins conditions
+- Quotes keep semicolons and operators inside a name
+- A quoted text is not mistaken for a property
+- An unfinished condition says what is missing
 
 ## Recent Model File Store
 
