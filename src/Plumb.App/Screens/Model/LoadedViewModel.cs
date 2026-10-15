@@ -151,12 +151,12 @@ public sealed partial class LoadedViewModel : ScreenViewModel
             case ParseResult.Invalid invalid:
                 FilterStatus = new FilterRejectedViewModel(invalid.Reason);
                 break;
-            case ParseResult.Parsed { Query.Conditions.Count: 0 }:
+            case ParseResult.Blank:
                 FilterStatus = null;
                 ShowNodes(_tree, filtering: false);
                 break;
             case ParseResult.Parsed parsed:
-                var matches = _search.Find(parsed.Query, CancellationToken.None);
+                var matches = _search.Find(parsed.Query);
                 FilterStatus = new FilterMatchedViewModel(matches.Count);
                 ShowNodes(ModelTreeFilter.Apply(_tree, matches), filtering: true);
                 break;

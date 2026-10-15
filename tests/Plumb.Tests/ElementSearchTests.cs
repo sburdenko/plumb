@@ -101,17 +101,6 @@ public sealed class ElementSearchTests
         Assert.That(Ids(new Condition.PropertyEquals("NoSuchProperty", "x")), Is.Empty);
     }
 
-    [Test]
-    public void ACancelledSearchStops()
-    {
-        using var cancelled = new CancellationTokenSource();
-        cancelled.Cancel();
-
-        Assert.That(
-            () => _search.Find(new ElementQuery([new Condition.Text("wall")]), cancelled.Token),
-            Throws.InstanceOf<OperationCanceledException>());
-    }
-
     private IEnumerable<string> Ids(params Condition[] conditions) =>
-        _search.Find(new ElementQuery(conditions), CancellationToken.None);
+        _search.Find(new ElementQuery(conditions));
 }

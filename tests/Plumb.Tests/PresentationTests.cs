@@ -72,7 +72,7 @@ public sealed class PresentationTests
     public void TypeGroupKeysAreStableAcrossRebuilds()
     {
         var first = Row(ModelTreeBuilder.Build(Records).Single());
-        var wallIds = new ElementSearch(Records, []).Find(new ElementQuery([new Condition.Text("wall")]), CancellationToken.None);
+        var wallIds = new ElementSearch(Records, []).Find(new ElementQuery([new Condition.Text("wall")]));
         var second = Row(ModelTreeFilter.Apply(ModelTreeBuilder.Build(Records), wallIds).Single());
 
         string GroupKey(TreeNodeViewModel root) =>

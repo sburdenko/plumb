@@ -1,5 +1,6 @@
+using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace Plumb.Core.Search
@@ -17,83 +18,68 @@ namespace Plumb.Core.Search
         public static ParseResult Parse(string? text)
         {
             var segments = Split(text ?? string.Empty);
-            if (segments == null)
+            if (segments is null)
             {
                 return new ParseResult.Invalid("A quote is not closed.");
             }
 
             var conditions = new List<Condition>();
-            foreach (var segment in segments)
+            foreach (var segment in segments.Where(segment => segment.Trim().Length > 0))
             {
-                if (segment.Trim().Length == 0)
+                switch (ReadCondition(segment))
                 {
-                    continue;
+                    case ConditionRead.Read read:
+                        conditions.Add(read.Condition);
+                        break;
+                    case ConditionRead.Rejected rejected:
+                        return new ParseResult.Invalid(rejected.Reason);
                 }
-
-                var result = ParseCondition(segment);
-                if (!(result is ParseResult.Parsed parsed))
-                {
-                    return result;
-                }
-
-                conditions.AddRange(parsed.Query.Conditions);
             }
 
-            return new ParseResult.Parsed(new ElementQuery(conditions));
+            return conditions.Count == 0
+                ? new ParseResult.Blank()
+                : new ParseResult.Parsed(new ElementQuery(conditions));
         }
 
-        private static ParseResult ParseCondition(string segment)
+        private static ConditionRead ReadCondition(string segment)
         {
-            var position = FindOperator(segment, out var op);
-            if (position < 0)
+            if (FindOperator(segment) is not { } found)
             {
-                return Single(new Condition.Text(Unquote(segment)));
+                return new ConditionRead.Read(new Condition.Text(Unquote(segment)));
             }
 
+            var (position, op) = found;
             var name = Unquote(segment.Substring(0, position));
             var value = Unquote(segment.Substring(position + op.Length));
             if (name.Length == 0)
             {
-                return new ParseResult.Invalid($"Write a property name before {op}.");
+                return new ConditionRead.Rejected($"Write a property name before {op}.");
             }
 
-            switch (op)
+            return op switch
             {
-                case "=":
-                case "~":
-                    if (value.Length == 0)
-                    {
-                        return new ParseResult.Invalid($"Write a value after {op}.");
-                    }
-
-                    return Single(op == "="
-                        ? new Condition.PropertyEquals(name, value)
-                        : new Condition.PropertyContains(name, value));
-                default:
-                    if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !IsFinite(number))
-                    {
-                        return new ParseResult.Invalid(value.Length == 0
-                            ? $"Write a number after {op}."
-                            : $"{op} needs a number, not \"{value}\".");
-                    }
-
-                    return Single(new Condition.PropertyNumber(name, ComparisonOf(op), number));
-            }
+                "=" or "~" when value.Length == 0 => new ConditionRead.Rejected($"Write a value after {op}."),
+                "=" => new ConditionRead.Read(new Condition.PropertyEquals(name, value)),
+                "~" => new ConditionRead.Read(new Condition.PropertyContains(name, value)),
+                _ => ReadNumberCondition(name, op, value),
+            };
         }
 
-        private static ParseResult Single(Condition condition) =>
-            new ParseResult.Parsed(new ElementQuery(new[] { condition }));
+        private static ConditionRead ReadNumberCondition(string name, string op, string value) =>
+            Numbers.TryParseFinite(value, out var number)
+                ? new ConditionRead.Read(new Condition.PropertyNumber(name, ComparisonOf(op), number))
+                : new ConditionRead.Rejected(value.Length == 0
+                    ? $"Write a number after {op}."
+                    : $"{op} needs a number, not \"{value}\".");
 
-        private static NumberComparison ComparisonOf(string op)
+        private static NumberComparison ComparisonOf(string op) => op switch
         {
-            switch (op)
-            {
-                case ">=": return NumberComparison.GreaterOrEqual;
-                case "<=": return NumberComparison.LessOrEqual;
-                case ">": return NumberComparison.Greater;
-                default: return NumberComparison.Less;
-            }
-        }
+            ">=" => NumberComparison.GreaterOrEqual,
+            "<=" => NumberComparison.LessOrEqual,
+            ">" => NumberComparison.Greater,
+            "<" => NumberComparison.Less,
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, "Not a number comparison."),
+        };
 
         /// <returns>The segments, or null when a quote is left open.</returns>
         private static List<string>? Split(string text)
@@ -128,7 +114,8 @@ namespace Plumb.Core.Search
             return segments;
         }
 
-        private static int FindOperator(string segment, out string op)
+        /// <returns>The first operator outside quotes and where it starts, or null when there is none.</returns>
+        private static (int Position, string Operator)? FindOperator(string segment)
         {
             var quoted = false;
             for (var i = 0; i < segment.Length; i++)
@@ -136,26 +123,14 @@ namespace Plumb.Core.Search
                 if (segment[i] == '"')
                 {
                     quoted = !quoted;
-                    continue;
                 }
-
-                if (quoted)
+                else if (!quoted && Operators.FirstOrDefault(op => string.CompareOrdinal(segment, i, op, 0, op.Length) == 0) is { } op)
                 {
-                    continue;
-                }
-
-                foreach (var candidate in Operators)
-                {
-                    if (string.CompareOrdinal(segment, i, candidate, 0, candidate.Length) == 0)
-                    {
-                        op = candidate;
-                        return i;
-                    }
+                    return (i, op);
                 }
             }
 
-            op = string.Empty;
-            return -1;
+            return null;
         }
 
         private static string Unquote(string text)
@@ -166,6 +141,16 @@ namespace Plumb.Core.Search
                 : trimmed;
         }
 
-        private static bool IsFinite(double number) => !double.IsNaN(number) && !double.IsInfinity(number);
+        /// <summary>One condition read from the text, or why it could not be.</summary>
+        private abstract record ConditionRead
+        {
+            private ConditionRead()
+            {
+            }
+
+            public sealed record Read(Condition Condition) : ConditionRead;
+
+            public sealed record Rejected(string Reason) : ConditionRead;
+        }
     }
 }
