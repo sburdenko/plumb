@@ -22,5 +22,6 @@
   <ItemGroup>
     <None Include="..\..\samples\Duplex.ifc" Link="Samples\Duplex.ifc" CopyToOutputDirectory="PreserveNewest"
           Condition="Exists('..\..\samples\Duplex.ifc')" />
+    <None Include="..\link-examples.txt" Link="link-examples.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
