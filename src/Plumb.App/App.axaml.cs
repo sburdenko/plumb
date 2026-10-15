@@ -7,6 +7,7 @@ using Avalonia.Platform.Storage;
 using Microsoft.Extensions.Logging;
 using Plumb.App.Logging;
 using Plumb.App.Platform;
+using Plumb.App.Platform.Viewer;
 using Plumb.App.Screens.Start.Recent;
 using Plumb.App.Shell;
 using Plumb.Import;
@@ -30,12 +31,13 @@ public sealed partial class App : Application
             SetDockIcon(logger);
 
             var window = new MainWindow();
+            var viewer = new ViewerLink(new ViewerStarter(loggerFactory.CreateLogger<ViewerStarter>()), loggerFactory.CreateLogger<ViewerLink>());
             var viewModel = new MainWindowViewModel(
                 ImportService.CreateDefault(loggerFactory),
                 new PlatformServices(
                     new StorageFilePickerService(window),
                     new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),
-                    new ViewerLauncher(loggerFactory.CreateLogger<ViewerLauncher>()),
+                    viewer,
                     new WindowClipboard(window, loggerFactory.CreateLogger<WindowClipboard>())),
                 new RecentModelFileStore(RecentModelFileStore.DefaultPath, loggerFactory.CreateLogger<RecentModelFileStore>()),
                 TimeProvider.System,
@@ -48,7 +50,11 @@ public sealed partial class App : Application
             }
 
             desktop.MainWindow = window;
-            desktop.Exit += (_, _) => loggerFactory.Dispose();
+            desktop.Exit += (_, _) =>
+            {
+                viewer.Dispose();
+                loggerFactory.Dispose();
+            };
             logger.LogInformation("Plumb started");
 
             if (desktop.Args is [var initialFile, ..])
