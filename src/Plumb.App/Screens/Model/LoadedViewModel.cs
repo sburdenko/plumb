@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Plumb.App.Formatting;
 using Plumb.App.Platform;
-using Plumb.App.Screens.Model.Filter;
 using Plumb.App.Screens.Model.Properties;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
@@ -12,34 +11,24 @@ using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
-using Plumb.Core.Search;
-using Plumb.Core.Tree;
 
 namespace Plumb.App.Screens.Model;
 
 /// <summary>
-/// The loaded model: spatial tree with filter, selected element, viewport state and status bar.
+/// The loaded model: header, viewport, status bar and the selected element's properties. The tree and its search
+/// box are <see cref="ModelTreeViewModel"/>.
 /// </summary>
 public sealed partial class LoadedViewModel : ScreenViewModel
 {
-    private const int MaxNodesToExpandOnFilter = 300;
-
-    private readonly IReadOnlyList<ModelTreeNode> _tree;
-    private readonly ElementSearch _search;
     private readonly ILookup<string, PropertyRecord> _propertiesByElement;
     private readonly IReadOnlyDictionary<string, ElementRecord> _elementsById;
-    private readonly Dictionary<string, bool> _expansion = new(StringComparer.Ordinal);
     private readonly PlatformServices _platform;
     private readonly TimeProvider _clock;
     private readonly PackageState _package;
-    private Dictionary<string, TreeNodeViewModel> _storeys = new(StringComparer.Ordinal);
-    private bool _rememberExpansion = true;
 
     public LoadedViewModel(LoadedModel loaded, OpenCommands open, PlatformServices platform, TimeProvider clock)
     {
         var model = loaded.Result.Model;
-        _tree = ModelTreeBuilder.Build(model.Elements);
-        _search = new ElementSearch(model.Elements, model.Properties);
         _propertiesByElement = model.Properties.ToLookup(p => p.GlobalId);
         _elementsById = model.Elements.ToDictionary(e => e.GlobalId);
         _package = loaded.Result.Package;
@@ -56,7 +45,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
         Counts = string.Format(CultureInfo.InvariantCulture, "{0:N0} elements · {1:N0} values", model.Elements.Count, model.Properties.Count);
         Viewport = ViewportFor(_package, loaded.FindSourcePath());
         StatusItems = StatusItemsFor(_package);
-        Nodes = BuildNodes(_tree, expandAll: false);
+        Tree = new ModelTreeViewModel(model.Elements, model.Properties, OnSelectionChanged);
     }
 
     public OpenCommands Open { get; }
@@ -99,24 +88,15 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     public string RevealLabel => _platform.Revealer.ActionLabel;
 
-    [ObservableProperty]
-    public partial string? Filter { get; set; }
-
-    /// <summary>The result of the filter text, or null while the box is empty.</summary>
-    [ObservableProperty]
-    public partial FilterStatusViewModel? FilterStatus { get; private set; }
-
-    [ObservableProperty]
-    public partial IReadOnlyList<TreeNodeViewModel> Nodes { get; private set; }
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelectedName), nameof(HasSelection))]
-    public partial TreeNodeViewModel? SelectedNode { get; set; }
+    public ModelTreeViewModel Tree { get; }
 
     [ObservableProperty]
     public partial ElementDetailsViewModel? SelectedElement { get; private set; }
 
-    public string? SelectedName => SelectedNode?.Element != null ? SelectedNode.Label : null;
+    /// <summary>The selected element's full name for the badge over the 3D area, or null when none is selected.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelection))]
+    public partial string? SelectedName { get; private set; }
 
     public bool HasSelection => SelectedName != null;
 
@@ -141,77 +121,16 @@ public sealed partial class LoadedViewModel : ScreenViewModel
         }
     }
 
-    [RelayCommand]
-    private void ClearFilter() => Filter = null;
-
-    partial void OnFilterChanged(string? value)
+    private void OnSelectionChanged(TreeNodeViewModel? node)
     {
-        switch (QueryParser.Parse(value))
-        {
-            case ParseResult.Invalid invalid:
-                FilterStatus = new FilterRejectedViewModel(invalid.Reason);
-                break;
-            case ParseResult.Blank:
-                FilterStatus = null;
-                ShowNodes(_tree, filtering: false);
-                break;
-            case ParseResult.Parsed parsed:
-                var matches = _search.Find(parsed.Query);
-                FilterStatus = new FilterMatchedViewModel(matches.Count);
-                ShowNodes(ModelTreeFilter.Apply(_tree, matches), filtering: true);
-                break;
-        }
-    }
-
-    private void ShowNodes(IReadOnlyList<ModelTreeNode> nodes, bool filtering)
-    {
-        Nodes = BuildNodes(nodes, expandAll: filtering && CountNodes(nodes) <= MaxNodesToExpandOnFilter, remember: !filtering);
-        MarkActiveStorey();
-    }
-
-    partial void OnSelectedNodeChanged(TreeNodeViewModel? value)
-    {
-        SelectedElement = value?.Element is { } element
+        SelectedName = node?.Element != null ? node.Label : null;
+        SelectedElement = node?.Element is { } element
             ? new ElementDetailsViewModel(
                 element,
                 StoreyNameOf(element),
                 _propertiesByElement[element.GlobalId],
                 new CopyableTextViewModel(element.GlobalId, _platform.Clipboard, _clock))
             : null;
-        MarkActiveStorey();
-    }
-
-    private IReadOnlyList<TreeNodeViewModel> BuildNodes(IReadOnlyList<ModelTreeNode> nodes, bool expandAll, bool remember = true)
-    {
-        _rememberExpansion = false;
-        var built = nodes.Select(node => TreeNodeViewModel.From(
-                node,
-                parentKey: string.Empty,
-                depth: 0,
-                (key, source) => expandAll || (_expansion.TryGetValue(key, out var expanded) ? expanded : ExpandedByDefault(source)),
-                OnExpansionChanged))
-            .ToList();
-        _rememberExpansion = remember;
-
-        _storeys = Flatten(built).Where(n => n.Kind == TreeNodeKind.Storey).ToDictionary(n => n.Key, StringComparer.Ordinal);
-        return built;
-    }
-
-    private void OnExpansionChanged(string key, bool expanded)
-    {
-        if (_rememberExpansion)
-        {
-            _expansion[key] = expanded;
-        }
-    }
-
-    private void MarkActiveStorey()
-    {
-        var storeyId = SelectedNode?.Element?.StoreyGlobalId;
-        foreach (var storey in _storeys.Values)
-        {
-            storey.IsActiveStorey = storey.Key == storeyId;
-        }
     }
 
     private string? StoreyNameOf(ElementRecord element) =>
@@ -251,13 +170,4 @@ public sealed partial class LoadedViewModel : ScreenViewModel
         string? NameOf(string type) => elements.FirstOrDefault(e => e.IfcType == type && !string.IsNullOrWhiteSpace(e.Name))?.Name;
         return NameOf("IfcBuilding") ?? NameOf("IfcProject");
     }
-
-    private static bool ExpandedByDefault(ModelTreeNode node) =>
-        node.Children.OfType<ElementNode>().Any(child => ModelTreeBuilder.IsSpatialLevel(child.Element.IfcType));
-
-    private static IEnumerable<TreeNodeViewModel> Flatten(IEnumerable<TreeNodeViewModel> nodes) =>
-        nodes.SelectMany(node => Flatten(node.Children).Prepend(node));
-
-    private static int CountNodes(IReadOnlyList<ModelTreeNode> nodes) =>
-        nodes.Sum(node => 1 + CountNodes(node.Children));
 }

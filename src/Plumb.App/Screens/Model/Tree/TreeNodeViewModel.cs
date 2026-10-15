@@ -15,7 +15,7 @@ public sealed partial class TreeNodeViewModel : ViewModelBase
     private const double ElementIndent = 86;
     private static readonly double[] IndentByDepth = [10, 24, 38, 52, 66];
 
-    private readonly Action<string, bool> _expansionChanged;
+    private readonly Action<string, bool>? _expansionChanged;
 
     private TreeNodeViewModel(
         string key,
@@ -37,8 +37,9 @@ public sealed partial class TreeNodeViewModel : ViewModelBase
         Indent = indent;
         Element = element;
         Children = children;
-        _expansionChanged = expansionChanged;
+        // The callback is attached after the initial state, so building a tree does not count as the user expanding it.
         IsExpanded = isExpanded;
+        _expansionChanged = expansionChanged;
     }
 
     /// <summary>Stable identity across filtering: the GlobalId, or the parent's id and the IFC type for a group.</summary>
@@ -75,7 +76,7 @@ public sealed partial class TreeNodeViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsActiveStorey { get; set; }
 
-    partial void OnIsExpandedChanged(bool value) => _expansionChanged(Key, value);
+    partial void OnIsExpandedChanged(bool value) => _expansionChanged?.Invoke(Key, value);
 
     /// <param name="isExpanded">Decides the initial expansion of each node from its key.</param>
     /// <param name="expansionChanged">Told whenever the user expands or collapses a node.</param>
