@@ -12,7 +12,8 @@ namespace Plumb.Viewer
         private const float Gutter = 14f;
         public const string HelpText = "Left drag  rotate     Shift or middle drag  pan     Wheel  zoom     Click  select     F  frame";
 
-        public static void DrawTopBar(string packageName)
+        /// <param name="linkBadge">A second badge saying the viewer is linked to Plumb, or null.</param>
+        public static void DrawTopBar(string packageName, string linkBadge)
         {
             var bar = new Rect(0, 0, Screen.width, TopBarHeight);
             Graphite.Fill(bar, Graphite.Panel);
@@ -25,11 +26,22 @@ namespace Plumb.Viewer
                 x = Label(new GUIContent(packageName), ViewerStyles.CrumbStrong, x, 16) + 10;
             }
 
-            var badge = new GUIContent("UNITY VIEWER");
+            x = Badge("UNITY VIEWER", x) + 8;
+            if (!string.IsNullOrEmpty(linkBadge))
+            {
+                Badge(linkBadge, x);
+            }
+        }
+
+        /// <returns>The x just past the badge.</returns>
+        private static float Badge(string text, float x)
+        {
+            var badge = new GUIContent(text);
             var size = ViewerStyles.Badge.CalcSize(badge);
             var box = new Rect(x, 14, size.x + 14, 20);
             Graphite.Rules(box, Graphite.Border, 1, 1, 1, 1);
             GUI.Label(new Rect(box.x + 7, box.y + 3, size.x, size.y), badge, ViewerStyles.Badge);
+            return box.xMax;
         }
 
         public static void DrawStatusBar(string text)
