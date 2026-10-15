@@ -3,6 +3,7 @@ using Plumb.App.Screens.Importing;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
+using Plumb.Core.Search;
 using Plumb.Core.Tree;
 
 namespace Plumb.Tests;
@@ -71,7 +72,8 @@ public sealed class PresentationTests
     public void TypeGroupKeysAreStableAcrossRebuilds()
     {
         var first = Row(ModelTreeBuilder.Build(Records).Single());
-        var second = Row(ModelTreeFilter.Apply(ModelTreeBuilder.Build(Records), "wall").Single());
+        var wallIds = new ElementSearch(Records, []).Find(new ElementQuery([new Condition.Text("wall")]), CancellationToken.None);
+        var second = Row(ModelTreeFilter.Apply(ModelTreeBuilder.Build(Records), wallIds).Single());
 
         string GroupKey(TreeNodeViewModel root) =>
             root.Children.Single().Children.Single().Children.Single().Children.Single(c => c.Title == "IfcWallStandardCase").Key;

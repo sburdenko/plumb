@@ -1,59 +1,43 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Plumb.Core.Search;
 
 namespace Plumb.Core.Tree
 {
     /// <summary>
-    /// Prunes a tree to nodes whose name, IFC type, GlobalId or tag contains the query, keeping their ancestors.
-    /// Tags match with or without their leading <c>#</c>.
-    /// A matching node keeps its whole subtree.
+    /// Prunes a tree to the elements a search matched, keeping their ancestors so each match stays in its place.
+    /// A matching element keeps its whole subtree.
     /// </summary>
     public static class ModelTreeFilter
     {
-        public static IReadOnlyList<ModelTreeNode> Apply(IReadOnlyList<ModelTreeNode> roots, string? query)
+        public static IReadOnlyList<ModelTreeNode> Apply(IReadOnlyList<ModelTreeNode> roots, ElementMatches matches)
         {
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                return roots;
-            }
-
-            var term = query.Trim();
-            return roots.Select(node => Filter(node, term)).OfType<ModelTreeNode>().ToList();
+            return roots.Select(node => Filter(node, matches)).OfType<ModelTreeNode>().ToList();
         }
 
-        private static ModelTreeNode? Filter(ModelTreeNode node, string term) => node switch
+        private static ModelTreeNode? Filter(ModelTreeNode node, ElementMatches matches) => node switch
         {
-            ElementNode element => FilterElement(element, term),
-            TypeGroupNode group => FilterGroup(group, term),
+            ElementNode element => FilterElement(element, matches),
+            TypeGroupNode group => FilterGroup(group, matches),
             _ => throw new ArgumentOutOfRangeException(nameof(node), node.GetType().Name, "Unknown tree node type."),
         };
 
-        private static ElementNode? FilterElement(ElementNode node, string term)
+        private static ElementNode? FilterElement(ElementNode node, ElementMatches matches)
         {
-            var element = node.Element;
-            if (Contains(element.Name, term) || Contains(element.IfcType, term) || Contains(element.GlobalId, term)
-                || Contains(element.Tag == null ? null : "#" + element.Tag, term))
+            if (matches.Contains(node.Element.GlobalId))
             {
                 return node;
             }
 
-            var children = node.Children.Select(child => Filter(child, term)).OfType<ModelTreeNode>().ToList();
+            var children = node.Children.Select(child => Filter(child, matches)).OfType<ModelTreeNode>().ToList();
             return children.Count == 0 ? null : node.WithChildren(children);
         }
 
-        private static TypeGroupNode? FilterGroup(TypeGroupNode group, string term)
+        private static TypeGroupNode? FilterGroup(TypeGroupNode group, ElementMatches matches)
         {
-            if (Contains(group.IfcType, term))
-            {
-                return group;
-            }
-
-            var elements = group.Elements.Select(element => FilterElement(element, term)).OfType<ElementNode>().ToList();
+            var elements = group.Elements.Select(element => FilterElement(element, matches)).OfType<ElementNode>().ToList();
             return elements.Count == 0 ? null : group.WithElements(elements);
         }
-
-        private static bool Contains(string? text, string term) =>
-            text != null && text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

@@ -1,4 +1,5 @@
 using Plumb.Core.Model;
+using Plumb.Core.Search;
 using Plumb.Core.Tree;
 
 namespace Plumb.Tests;
@@ -18,18 +19,12 @@ public sealed class ModelTreeFilterTests
 
     private readonly IReadOnlyList<ModelTreeNode> _tree = ModelTreeBuilder.Build(Records);
 
-    [TestCase(null)]
-    [TestCase("")]
-    [TestCase("   ")]
-    public void BlankQueryReturnsTreeUnchanged(string? query)
-    {
-        Assert.That(ModelTreeFilter.Apply(_tree, query), Is.SameAs(_tree));
-    }
+    private readonly ElementSearch _search = new(Records, []);
 
     [Test]
     public void NameMatchKeepsAncestorsAndUpdatesGroupCounts()
     {
-        var result = ModelTreeFilter.Apply(_tree, "interior");
+        var result = Filter("interior");
 
         var project = (ElementNode)result.Single();
         var level1 = (ElementNode)project.Children.Single();
@@ -41,7 +36,7 @@ public sealed class ModelTreeFilterTests
     [Test]
     public void MatchIsCaseInsensitiveAcrossBranches()
     {
-        var result = ModelTreeFilter.Apply(_tree, "EXTERIOR");
+        var result = Filter("EXTERIOR");
 
         var project = (ElementNode)result.Single();
         Assert.That(project.Children.Select(c => c.Label), Is.EqualTo(new[] { "Level 1", "Level 2" }));
@@ -50,7 +45,7 @@ public sealed class ModelTreeFilterTests
     [Test]
     public void TypeMatchKeepsTheWholeGroup()
     {
-        var result = ModelTreeFilter.Apply(_tree, "ifcwall");
+        var result = Filter("ifcwall");
 
         var level1 = (ElementNode)((ElementNode)result.Single()).Children.Single();
         Assert.That(level1.Children.Single().Label, Is.EqualTo("IfcWall (2)"));
@@ -59,7 +54,7 @@ public sealed class ModelTreeFilterTests
     [Test]
     public void MatchesGlobalId()
     {
-        var result = ModelTreeFilter.Apply(_tree, "d1");
+        var result = Filter("d1");
 
         var level2 = (ElementNode)((ElementNode)result.Single()).Children.Single();
         Assert.That(level2.Label, Is.EqualTo("Level 2"));
@@ -68,7 +63,7 @@ public sealed class ModelTreeFilterTests
     [Test]
     public void MatchesTag()
     {
-        var result = ModelTreeFilter.Apply(_tree, "#139117");
+        var result = Filter("#139117");
 
         var level1 = (ElementNode)((ElementNode)result.Single()).Children.Single();
         var walls = (TypeGroupNode)level1.Children.Single();
@@ -78,15 +73,32 @@ public sealed class ModelTreeFilterTests
     [Test]
     public void NoMatchReturnsEmpty()
     {
-        Assert.That(ModelTreeFilter.Apply(_tree, "zzz"), Is.Empty);
+        Assert.That(Filter("zzz"), Is.Empty);
     }
 
     [Test]
     public void FilteringDoesNotMutateTheSourceTree()
     {
-        ModelTreeFilter.Apply(_tree, "interior");
+        Filter("interior");
 
         var level1 = (ElementNode)((ElementNode)_tree[0]).Children[0];
+        Assert.That(level1.Children.Single().Label, Is.EqualTo("IfcWall (2)"));
+    }
+
+    private IReadOnlyList<ModelTreeNode> Filter(string text)
+    {
+        var query = ((ParseResult.Parsed)QueryParser.Parse(text)).Query;
+        return ModelTreeFilter.Apply(_tree, _search.Find(query, CancellationToken.None));
+    }
+
+    [Test]
+    public void ANodeThatMatchesKeepsItsWholeSubtree()
+    {
+        var matches = _search.Find(new ElementQuery([new Condition.Text("level 1")]), CancellationToken.None);
+
+        var result = ModelTreeFilter.Apply(_tree, matches);
+
+        var level1 = (ElementNode)((ElementNode)result.Single()).Children.Single();
         Assert.That(level1.Children.Single().Label, Is.EqualTo("IfcWall (2)"));
     }
 }
