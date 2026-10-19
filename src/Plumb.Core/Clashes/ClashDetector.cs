@@ -8,8 +8,9 @@ namespace Plumb.Core.Clashes
 {
     /// <summary>
     /// Finds elements of one group whose surfaces pass through elements of another. A tree over the second group's
-    /// bounding boxes finds the pairs worth a look; a tree over each element's triangles finds the triangle pairs
-    /// worth testing; <see cref="TriangleCrossing"/> says how deep they cross.
+    /// bounding boxes finds the pairs worth a look, and pairs whose boxes overlap by no more than the tolerance are
+    /// dropped; a tree over each element's triangles finds the triangle pairs worth testing;
+    /// <see cref="TriangleCrossing"/> says how deep they cross.
     /// </summary>
     public static class ClashDetector
     {
@@ -43,7 +44,14 @@ namespace Plumb.Core.Clashes
                         continue;
                     }
 
-                    var (penetration, location) = Deepest(a, b, surfaces);
+                    var overlap = Thinnest(a.Bounds.Intersect(b.Bounds).Size);
+                    if (overlap <= tolerance)
+                    {
+                        continue;
+                    }
+
+                    var (crossing, location) = Deepest(a, b, surfaces);
+                    var penetration = Math.Min(crossing, overlap);
                     if (penetration > tolerance)
                     {
                         clashes.Add(new Clash(a.GlobalId, b.GlobalId, penetration, location));
@@ -96,6 +104,12 @@ namespace Plumb.Core.Clashes
 
             return tree;
         }
+
+        /// <summary>
+        /// Moving one element this far along the thinnest side of the overlap of the two boxes parts them, so no
+        /// clash between them is deeper.
+        /// </summary>
+        private static float Thinnest(Vector3 size) => Math.Min(size.X, Math.Min(size.Y, size.Z));
 
         private static (string, string) PairKey(string a, string b) => string.CompareOrdinal(a, b) <= 0 ? (a, b) : (b, a);
     }
