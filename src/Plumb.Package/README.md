@@ -1,6 +1,6 @@
 # Plumb.Package
 
-Writes a `.plumb` folder and reads it back: the SQLite database, `elements.json`, `manifest.json`, and the node count of `model.glb`.
+Writes a `.plumb` folder and reads it back: the SQLite database, `elements.json`, `manifest.json`, the node count of `model.glb`, and the triangles of every element in it for clash detection.
 
 **May:** use SQLite and JSON, check the format version, throw `PackageFormatException` or `PackageOutdatedException`.
 
