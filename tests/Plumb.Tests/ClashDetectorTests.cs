@@ -22,6 +22,15 @@ public sealed class ClashDetectorTests
     }
 
     [Test]
+    public void APipeThroughADuctPenetratesByThePipesSizeNotItsLength()
+    {
+        var duct = Cuboid.Shape("duct", (0, 0, 0), (4, 0.6f, 0.4f));
+        var pipe = Cuboid.Shape("pipe", (2, -1, 0.1f), (2.05f, 2, 0.15f));
+
+        Assert.That(Find([pipe], [duct]).Single().Penetration, Is.EqualTo(0.05f).Within(1e-4f));
+    }
+
+    [Test]
     public void AWallStandingOnASlabOnlyTouchesIt()
     {
         var wall = Cuboid.Shape("wall", (0, 0, 0.2f), (4, 0.2f, 3));
