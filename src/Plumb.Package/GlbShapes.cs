@@ -58,7 +58,13 @@ public static class GlbShapes
     private sealed class Reader(JsonElement gltf, ReadOnlyMemory<byte> binary)
     {
         private readonly Dictionary<string, List<Triangle>> _byElement = new(StringComparer.Ordinal);
-        private readonly Dictionary<int, IReadOnlyList<Triangle>> _meshes = [];
+        private readonly Dictionary<int, IReadOnlyList<Triangle>> _meshTriangles = [];
+
+        // Indexing a JsonElement array walks it from the start, which is quadratic over thousands of nodes.
+        private readonly JsonElement[] _nodes = ArrayOf(gltf, "nodes");
+        private readonly JsonElement[] _meshes = ArrayOf(gltf, "meshes");
+        private readonly JsonElement[] _accessors = ArrayOf(gltf, "accessors");
+        private readonly JsonElement[] _bufferViews = ArrayOf(gltf, "bufferViews");
 
         public IReadOnlyList<ElementShape> Shapes()
         {
@@ -76,7 +82,7 @@ public static class GlbShapes
 
         private void Visit(int index, Matrix4x4 parent, string? owner)
         {
-            var node = gltf.GetProperty("nodes")[index];
+            var node = _nodes[index];
             var world = LocalTransform(node) * parent;
             owner = node.TryGetProperty("name", out var name) && name.GetString() is { Length: > 0 } named ? named : owner;
 
@@ -100,13 +106,13 @@ public static class GlbShapes
 
         private IReadOnlyList<Triangle> MeshTriangles(int mesh)
         {
-            if (_meshes.TryGetValue(mesh, out var cached))
+            if (_meshTriangles.TryGetValue(mesh, out var cached))
             {
                 return cached;
             }
 
             var triangles = new List<Triangle>();
-            foreach (var primitive in gltf.GetProperty("meshes")[mesh].GetProperty("primitives").EnumerateArray())
+            foreach (var primitive in _meshes[mesh].GetProperty("primitives").EnumerateArray())
             {
                 var mode = primitive.TryGetProperty("mode", out var declared) ? declared.GetInt32() : Triangles;
                 if (mode != Triangles || !primitive.GetProperty("attributes").TryGetProperty("POSITION", out var position))
@@ -124,7 +130,7 @@ public static class GlbShapes
                 }
             }
 
-            _meshes.Add(mesh, triangles);
+            _meshTriangles.Add(mesh, triangles);
             return triangles;
         }
 
@@ -146,7 +152,7 @@ public static class GlbShapes
 
         private List<int> Indices(int accessor)
         {
-            var componentType = gltf.GetProperty("accessors")[accessor].GetProperty("componentType").GetInt32();
+            var componentType = _accessors[accessor].GetProperty("componentType").GetInt32();
             var size = componentType switch
             {
                 5121 => 1,
@@ -172,14 +178,17 @@ public static class GlbShapes
 
         private (ReadOnlyMemory<byte> Data, int Count, int Stride) View(int accessorIndex, int elementSize)
         {
-            var accessor = gltf.GetProperty("accessors")[accessorIndex];
+            var accessor = _accessors[accessorIndex];
             var count = accessor.GetProperty("count").GetInt32();
-            var view = gltf.GetProperty("bufferViews")[accessor.GetProperty("bufferView").GetInt32()];
+            var view = _bufferViews[accessor.GetProperty("bufferView").GetInt32()];
             var stride = view.TryGetProperty("byteStride", out var declared) ? declared.GetInt32() : elementSize;
             var start = Offset(view) + Offset(accessor);
             var length = count == 0 ? 0 : (count - 1) * stride + elementSize;
             return (binary.Slice(start, length), count, stride);
         }
+
+        private static JsonElement[] ArrayOf(JsonElement gltf, string property) =>
+            gltf.TryGetProperty(property, out var array) ? array.EnumerateArray().ToArray() : [];
 
         private static int Offset(JsonElement element) => element.TryGetProperty("byteOffset", out var offset) ? offset.GetInt32() : 0;
 
