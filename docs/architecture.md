@@ -19,10 +19,10 @@ Each part is a separate project in `src/`. A part may use only the parts listed 
 
 | Part | What it does | Uses | Outside library |
 |---|---|---|---|
-| **Core** | Defines the words everyone else speaks: what an element is, what a property is, what the result of an import looks like. Has no logic that touches files or screens. | nothing | none |
+| **Core** | Defines the words everyone else speaks: what an element is, what a property is, what the result of an import looks like. Holds the pure logic over them too: search, and finding where elements pass through each other. Has no logic that touches files or screens. | nothing | none |
 | **Ifc** | Reads an IFC file and turns it into Core's elements and properties. The only part that understands the IFC format. | Core | xBIM |
 | **Geometry** | Turns the IFC file into a 3D shape by running an outside tool, IfcConvert. Stops it on time-out or cancel. | Core | IfcConvert |
-| **Package** | Writes elements and properties into the `.plumb` folder and reads them back. The only part that knows how that folder is laid out. | Core | SQLite |
+| **Package** | Writes elements and properties into the `.plumb` folder and reads them back, the triangles of the 3D shape included. The only part that knows how that folder is laid out. | Core | SQLite |
 | **Import** | Runs the steps in the right order: check the file, copy it, read it and build geometry at the same time, save, publish. Turns every failure into a result the window can show. | Core, Ifc, Geometry, Package | none |
 | **App** | The window: drag and drop, tree, property panel, recent models, menus. Talks only to Import. | Core, Import | Avalonia |
 
