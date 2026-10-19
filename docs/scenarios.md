@@ -14,6 +14,24 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Core names outcomes as states not as boolean flags
 - Core values cannot change after construction
 
+## Box Tree
+
+- Finds exactly the boxes a brute force search finds
+- An empty tree finds nothing
+- Boxes that only touch overlap
+
+## Clash Detector
+
+- A duct through a beam clashes
+- A pipe through a duct penetrates by the pipes size not its length
+- A wall standing on a slab only touches it
+- An overlap within the tolerance is ignored
+- Elements apart do not clash
+- An element in both groups is not compared with itself and each pair is reported once
+- The deepest clash comes first
+- The location is where the elements meet
+- A search can be cancelled
+
 ## Console Text
 
 - Decodes utf8
@@ -60,6 +78,18 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 
 - Counts nodes from the json chunk
 - Missing or foreign files have no count
+
+## Glb Shapes
+
+- A named node is an element placed where it stands
+- A parents matrix applies to its children
+- An unnamed mesh belongs to the named node above it
+- A mesh used by two elements belongs to both
+- Indices pick the corners
+- Interleaved positions are read by their stride
+- Lines and points have no surface
+- A file that is not binary gltf is rejected
+- Every element of the duplex package has a shape
 
 ## Ifc Convert Runner
 
@@ -344,6 +374,15 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 ## Screen View Model
 
 - The window shows empty importing failed or loaded
+
+## Triangle Crossing
+
+- Triangles that pass through each other cross by the shallower side
+- A triangle standing on another only touches it
+- Triangles in one plane do not cross
+- Triangles whose planes cross away from them do not cross
+- Parallel triangles do not cross
+- A degenerate triangle crosses nothing
 
 ## Viewer Link
 

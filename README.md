@@ -114,10 +114,10 @@ Every project does one job and references only what that job needs. Each box dep
 
 | Project | Job | Key library |
 |---|---|---|
-| `Plumb.Core` | Records, import results, the element tree and search. Targets netstandard2.1, so any .NET runtime can reference it, Unity included. | |
+| `Plumb.Core` | Records, import results, the element tree, search and clash detection. Targets netstandard2.1, so any .NET runtime can reference it, Unity included. | |
 | `Plumb.Ifc` | Reads an IFC file into element and property records. | xBIM |
 | `Plumb.Geometry` | Runs IfcConvert to write `model.glb`, with a timeout, and stops it on cancel. | IfcConvert, as a separate process |
-| `Plumb.Package` | Writes records into a `.plumb` folder and reads them back. | SQLite |
+| `Plumb.Package` | Writes records into a `.plumb` folder and reads them back, the triangles of `model.glb` included. | SQLite |
 | `Plumb.Import` | Runs the steps in order, reports progress, turns every failure into a result. | |
 | `Plumb.App` | Drag and drop, tree, property panel. | Avalonia |
 | `viewer/` | Unity 6 project: loads `model.glb`, orbit camera, picks elements by GlobalId. | glTFast |
