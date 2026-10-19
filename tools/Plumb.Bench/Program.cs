@@ -11,8 +11,14 @@ using Plumb.Import;
 // Imports one IFC file the way the app does, opens the package it wrote, and prints a row for the README.
 // One file per run, so the peak memory belongs to that model alone:
 //   dotnet run -c Release --project tools/Plumb.Bench -- samples/Duplex.ifc
+// With "clashes", times clash detection on a package instead; see ClashBench.
 
 const int OpenRuns = 5;
+
+if (args is ["clashes", var package, var first, var second])
+{
+    return ClashBench.Run(Path.GetFullPath(package), first, second);
+}
 
 if (args is not [var ifcArgument] || !File.Exists(ifcArgument))
 {
