@@ -4,20 +4,24 @@ using CommunityToolkit.Mvvm.Input;
 using Plumb.App.Formatting;
 using Plumb.App.Platform;
 using Plumb.App.Platform.Viewer;
+using Plumb.App.Screens.Model.Clashes;
 using Plumb.App.Screens.Model.Properties;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
 using Plumb.App.Shell;
+using Plumb.Core.Clashes;
 using Plumb.Core.Geometry;
 using Plumb.Core.Import;
 using Plumb.Core.Model;
 using Plumb.Core.Package;
+using Plumb.Core.Search;
 
 namespace Plumb.App.Screens.Model;
 
 /// <summary>
-/// The loaded model: header, viewport, status bar and the selected element's properties. The tree and its search
-/// box are <see cref="ModelTreeViewModel"/>.
+/// The loaded model: header, viewport, status bar and the selected element's properties. The column beside the
+/// 3D area shows the tree and its search box, <see cref="ModelTreeViewModel"/>, or the clash search,
+/// <see cref="ClashesViewModel"/>.
 /// </summary>
 public sealed partial class LoadedViewModel : ScreenViewModel
 {
@@ -27,7 +31,7 @@ public sealed partial class LoadedViewModel : ScreenViewModel
     private readonly TimeProvider _clock;
     private readonly PackageState _package;
 
-    public LoadedViewModel(LoadedModel loaded, OpenCommands open, PlatformServices platform, TimeProvider clock)
+    public LoadedViewModel(LoadedModel loaded, OpenCommands open, PlatformServices platform, IClashService clashes, TimeProvider clock)
     {
         var model = loaded.Result.Model;
         _propertiesByElement = model.Properties.ToLookup(p => p.GlobalId);
@@ -46,7 +50,9 @@ public sealed partial class LoadedViewModel : ScreenViewModel
         Counts = string.Format(CultureInfo.InvariantCulture, "{0:N0} elements · {1:N0} values", model.Elements.Count, model.Properties.Count);
         Viewport = ViewportFor(_package, loaded.FindSourcePath());
         StatusItems = StatusItemsFor(_package);
-        Tree = new ModelTreeViewModel(model.Elements, model.Properties, OnSelectionChanged);
+        var search = new ElementSearch(model.Elements, model.Properties);
+        Tree = new ModelTreeViewModel(model.Elements, search, OnSelectionChanged);
+        Clashes = new ClashesViewModel(_package, model.Elements, search, clashes, Tree.SelectElement);
     }
 
     public OpenCommands Open { get; }
@@ -91,6 +97,17 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     public ModelTreeViewModel Tree { get; }
 
+    public ClashesViewModel Clashes { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTreeShown))]
+    [NotifyPropertyChangedFor(nameof(IsClashesShown))]
+    public partial ModelPanel Panel { get; private set; } = ModelPanel.Tree;
+
+    public bool IsTreeShown => Panel == ModelPanel.Tree;
+
+    public bool IsClashesShown => Panel == ModelPanel.Clashes;
+
     [ObservableProperty]
     public partial ElementDetailsViewModel? SelectedElement { get; private set; }
 
@@ -103,6 +120,12 @@ public sealed partial class LoadedViewModel : ScreenViewModel
 
     [ObservableProperty]
     public partial string? ActionError { get; private set; }
+
+    [RelayCommand]
+    private void ShowTree() => Panel = ModelPanel.Tree;
+
+    [RelayCommand]
+    private void ShowClashes() => Panel = ModelPanel.Clashes;
 
     /// <summary>Follows a selection made in the viewer, when that viewer shows this model.</summary>
     public void ShowViewerSelection(ViewerSelection selection)

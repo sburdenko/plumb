@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- Lucide icons (ISC), 24x24 stroke geometry, drawn by LucideIcon with round caps. -->
+  <StreamGeometry x:Key="Icon.Clashes">M4 3h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z M14 10h6a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-6</StreamGeometry>
   <StreamGeometry x:Key="Icon.ListTree">M8 5h13 M13 12h8 M13 19h8 M3 10a2 2 0 0 0 2 2h3 M3 5v12a2 2 0 0 0 2 2h3</StreamGeometry>
   <StreamGeometry x:Key="Icon.ChevronDown">m6 9 6 6 6-6</StreamGeometry>
   <StreamGeometry x:Key="Icon.ChevronRight">m9 18 6-6-6-6</StreamGeometry>

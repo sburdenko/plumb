@@ -32,6 +32,28 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - The location is where the elements meet
 - A search can be cancelled
 
+## Clash Service
+
+- Finds clashes between the two groups only
+- A second search on the same package does not read the geometry again
+- A package without geometry cannot be searched
+- Unreadable geometry is reported
+- A cancelled search says so
+
+## Clashes View Model
+
+- Starts idle and cannot search without groups
+- Each group says how many elements it matches
+- Searching needs both groups to match something
+- The search covers the package and the matched elements
+- Clashes are listed with both elements and how deep they go
+- No clashes is said plainly
+- A failed search shows why
+- A running search shows its step and can be cancelled
+- Choosing a clash selects its first element
+- Without geometry there is nothing to search
+- An unsaved model has nothing to search
+
 ## Console Text
 
 - Decodes utf8
@@ -175,6 +197,8 @@ Every line is the name of one automated test in `tests/Plumb.Tests`, written out
 - Selecting an element tells the viewer of this package
 - An unsaved model has no viewer to tell
 - Open in3 d starts the viewer on the selected element
+- The tree is shown until clashes are chosen
+- Choosing a clash selects its element in the tree and the viewer
 
 ## Main Window Failure
 

@@ -22,6 +22,7 @@ internal sealed class MainWindowHarness
     {
         ViewModel = new MainWindowViewModel(
             Import,
+            new FakeClashService(),
             new PlatformServices(Picker, Revealer, Viewer, new FakeClipboard()),
             Recent,
             TimeProvider.System,

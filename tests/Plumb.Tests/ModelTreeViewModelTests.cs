@@ -1,6 +1,7 @@
 using Plumb.App.Screens.Model.Filter;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.Core.Model;
+using Plumb.Core.Search;
 
 namespace Plumb.Tests;
 
@@ -28,7 +29,7 @@ public sealed class ModelTreeViewModelTests
     public void SelectingAnElementMarksItsStoreyAndTellsTheScreen()
     {
         TreeNodeViewModel? told = null;
-        var tree = new ModelTreeViewModel(Elements, Properties, node => told = node);
+        var tree = new ModelTreeViewModel(Elements, new ElementSearch(Elements, Properties), node => told = node);
         var wall = Storey(tree, "Level 1").Children.Single().Children.Single();
 
         tree.SelectedNode = wall;
@@ -163,7 +164,7 @@ public sealed class ModelTreeViewModelTests
         Assert.That(tree.SelectedNode, Is.Null);
     }
 
-    private static ModelTreeViewModel Tree() => new(Elements, Properties, _ => { });
+    private static ModelTreeViewModel Tree() => new(Elements, new ElementSearch(Elements, Properties), _ => { });
 
     private static IEnumerable<TreeNodeViewModel> Flatten(IEnumerable<TreeNodeViewModel> nodes) =>
         nodes.SelectMany(node => Flatten(node.Children).Prepend(node));

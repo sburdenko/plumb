@@ -9,6 +9,7 @@ using Plumb.App.Screens.Importing;
 using Plumb.App.Screens.Model;
 using Plumb.App.Screens.Start;
 using Plumb.App.Screens.Start.Recent;
+using Plumb.Core.Clashes;
 using Plumb.Core.Import;
 using Plumb.Core.Package;
 
@@ -20,6 +21,7 @@ namespace Plumb.App.Shell;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IImportService _importService;
+    private readonly IClashService _clashService;
     private readonly PlatformServices _platform;
     private readonly TimeProvider _clock;
     private readonly ILogger<MainWindowViewModel> _logger;
@@ -28,12 +30,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel(
         IImportService importService,
+        IClashService clashService,
         PlatformServices platform,
         IRecentModelStore recentModels,
         TimeProvider clock,
         ILogger<MainWindowViewModel> logger)
     {
         _importService = importService;
+        _clashService = clashService;
         _platform = platform;
         _clock = clock;
         _logger = logger;
@@ -160,7 +164,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private LoadedViewModel Loaded(LoadedModel model)
     {
         _recent.Record(model);
-        return new LoadedViewModel(model, _open, _platform, _clock);
+        return new LoadedViewModel(model, _open, _platform, _clashService, _clock);
     }
 
     private EmptyStateViewModel Empty(string? errorMessage)
