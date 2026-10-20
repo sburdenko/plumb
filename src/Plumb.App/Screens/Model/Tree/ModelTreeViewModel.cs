@@ -23,14 +23,15 @@ public sealed partial class ModelTreeViewModel : ViewModelBase
     private Dictionary<string, TreeNodeViewModel> _storeys = new(StringComparer.Ordinal);
     private TreeMode _mode = TreeMode.Browsing;
 
+    /// <param name="search">The search over the same elements, shared with the clash panel.</param>
     /// <param name="selectionChanged">Told whenever the selected node changes, including to none.</param>
     public ModelTreeViewModel(
         IReadOnlyList<ElementRecord> elements,
-        IReadOnlyList<PropertyRecord> properties,
+        ElementSearch search,
         Action<TreeNodeViewModel?> selectionChanged)
     {
         _tree = ModelTreeBuilder.Build(elements);
-        _search = new ElementSearch(elements, properties);
+        _search = search;
         _selectionChanged = selectionChanged;
         Show(_tree, TreeMode.Browsing);
     }

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:model="using:Plumb.App.Screens.Model"
+             xmlns:clashes="using:Plumb.App.Screens.Model.Clashes"
              xmlns:filter="using:Plumb.App.Screens.Model.Filter"
              xmlns:properties="using:Plumb.App.Screens.Model.Properties"
              xmlns:tree="using:Plumb.App.Screens.Model.Tree"
@@ -30,65 +31,90 @@
         <Style Selector="Grid.row.selected TextBlock.title">
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
+        <!-- Icon rail -->
+        <Style Selector="Button.rail">
+            <Setter Property="Width" Value="52" />
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextMutedBrush}" />
+        </Style>
+        <Style Selector="Button.rail.active, Button.rail:pointerover">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextBrush}" />
+        </Style>
     </UserControl.Styles>
 
     <Grid ColumnDefinitions="52,300,*,380">
         <!-- Icon rail -->
         <Border Background="{StaticResource Plumb.PanelBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,2,0">
             <StackPanel Margin="0,8,0,0" Spacing="4">
-                <Grid Height="44" ToolTip.Tip="Model">
-                    <Rectangle Width="3" HorizontalAlignment="Left" Fill="{StaticResource Plumb.AccentBrush}" />
-                    <controls:LucideIcon Data="{StaticResource Icon.ListTree}" Size="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Grid>
+                <Button Classes="flat rail" Classes.active="{Binding IsTreeShown}" Command="{Binding ShowTreeCommand}" ToolTip.Tip="Spatial structure">
+                    <Grid>
+                        <Rectangle Width="3" HorizontalAlignment="Left" Fill="{StaticResource Plumb.AccentBrush}" IsVisible="{Binding IsTreeShown}" />
+                        <controls:LucideIcon Data="{StaticResource Icon.ListTree}" Size="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+                <Button Classes="flat rail" Classes.active="{Binding IsClashesShown}" Command="{Binding ShowClashesCommand}" ToolTip.Tip="Clashes">
+                    <Grid>
+                        <Rectangle Width="3" HorizontalAlignment="Left" Fill="{StaticResource Plumb.AccentBrush}" IsVisible="{Binding IsClashesShown}" />
+                        <controls:LucideIcon Data="{StaticResource Icon.Clashes}" Size="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
             </StackPanel>
         </Border>
 
-        <!-- Spatial tree -->
+        <!-- Spatial tree or clashes -->
         <Border Grid.Column="1" Background="{StaticResource Plumb.InkBrush}" BorderBrush="{StaticResource Plumb.RuleBrush}" BorderThickness="0,0,2,0">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Margin="14,14,14,10" Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Classes="caps" Text="SPATIAL STRUCTURE" />
-                        <TextBlock Grid.Column="1" Classes="caps muted numbers" Text="{Binding ElementCount}" />
-                    </Grid>
-                    <TextBox Name="FilterBox" Classes="filter" PlaceholderText="Name, #tag, Property = value" Text="{Binding Tree.Filter}">
-                        <ToolTip.Tip>
-                            <TextBlock TextWrapping="Wrap" MaxWidth="300" LineHeight="20"
-                                       Text="Words search names, classes, GlobalIds and tags.&#10;FireRating = REI 90 matches a property value, Size ~ 1150 part of one, Area &gt; 10 a number.&#10;Join conditions with ;" />
-                        </ToolTip.Tip>
-                        <TextBox.KeyBindings>
-                            <KeyBinding Gesture="Escape" Command="{Binding Tree.ClearFilterCommand}" />
-                        </TextBox.KeyBindings>
-                    </TextBox>
-                    <ContentControl Content="{Binding Tree.FilterStatus}" TextElement.FontSize="12">
-                        <ContentControl.DataTemplates>
-                            <DataTemplate DataType="filter:FilterMatchedViewModel">
-                                <TextBlock Classes="muted numbers" Text="{Binding Text}" />
-                            </DataTemplate>
-                            <DataTemplate DataType="filter:FilterRejectedViewModel">
-                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
-                            </DataTemplate>
-                        </ContentControl.DataTemplates>
-                    </ContentControl>
-                </StackPanel>
-                <TreeView ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                          ItemsSource="{Binding Tree.Nodes}"
-                          SelectedItem="{Binding Tree.SelectedNode, Mode=TwoWay}"
-                          ItemContainerTheme="{StaticResource Plumb.TreeItem}">
-                    <TreeView.ItemTemplate>
-                        <TreeDataTemplate DataType="tree:TreeNodeViewModel" ItemsSource="{Binding Children}">
-                            <Grid Classes="row" Classes.selected="{Binding $parent[TreeViewItem].IsSelected}"
-                                  ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Label}" Background="Transparent">
-                                <TextBlock Classes="title" Classes.strong="{Binding IsStrong}" Classes.active="{Binding IsActiveStorey}">
-                                    <Run Text="{Binding Title}" />
-                                    <Run Text="{Binding SubtitleSuffix}" FontWeight="Normal" Foreground="{StaticResource Plumb.TextMutedBrush}" />
-                                </TextBlock>
-                                <TextBlock Grid.Column="1" Classes="meta numbers" Text="{Binding Meta}" Margin="6,0,12,0" />
-                            </Grid>
-                        </TreeDataTemplate>
-                    </TreeView.ItemTemplate>
-                </TreeView>
-            </DockPanel>
+            <Panel>
+                <Border IsVisible="{Binding IsClashesShown}">
+                    <clashes:ClashesView DataContext="{Binding Clashes}" />
+                </Border>
+                <DockPanel IsVisible="{Binding IsTreeShown}">
+                    <StackPanel DockPanel.Dock="Top" Margin="14,14,14,10" Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="caps" Text="SPATIAL STRUCTURE" />
+                            <TextBlock Grid.Column="1" Classes="caps muted numbers" Text="{Binding ElementCount}" />
+                        </Grid>
+                        <TextBox Name="FilterBox" Classes="filter" PlaceholderText="Name, #tag, Property = value" Text="{Binding Tree.Filter}">
+                            <ToolTip.Tip>
+                                <TextBlock TextWrapping="Wrap" MaxWidth="300" LineHeight="20"
+                                           Text="Words search names, classes, GlobalIds and tags.&#10;FireRating = REI 90 matches a property value, Size ~ 1150 part of one, Area &gt; 10 a number.&#10;Join conditions with ;" />
+                            </ToolTip.Tip>
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Escape" Command="{Binding Tree.ClearFilterCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <ContentControl Content="{Binding Tree.FilterStatus}" TextElement.FontSize="12">
+                            <ContentControl.DataTemplates>
+                                <DataTemplate DataType="filter:FilterMatchedViewModel">
+                                    <TextBlock Classes="muted numbers" Text="{Binding Text}" />
+                                </DataTemplate>
+                                <DataTemplate DataType="filter:FilterRejectedViewModel">
+                                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                                </DataTemplate>
+                            </ContentControl.DataTemplates>
+                        </ContentControl>
+                    </StackPanel>
+                    <TreeView ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ItemsSource="{Binding Tree.Nodes}"
+                              SelectedItem="{Binding Tree.SelectedNode, Mode=TwoWay}"
+                              ItemContainerTheme="{StaticResource Plumb.TreeItem}">
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate DataType="tree:TreeNodeViewModel" ItemsSource="{Binding Children}">
+                                <Grid Classes="row" Classes.selected="{Binding $parent[TreeViewItem].IsSelected}"
+                                      ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Label}" Background="Transparent">
+                                    <TextBlock Classes="title" Classes.strong="{Binding IsStrong}" Classes.active="{Binding IsActiveStorey}">
+                                        <Run Text="{Binding Title}" />
+                                        <Run Text="{Binding SubtitleSuffix}" FontWeight="Normal" Foreground="{StaticResource Plumb.TextMutedBrush}" />
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="1" Classes="meta numbers" Text="{Binding Meta}" Margin="6,0,12,0" />
+                                </Grid>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </DockPanel>
+            </Panel>
         </Border>
 
         <!-- Viewport -->

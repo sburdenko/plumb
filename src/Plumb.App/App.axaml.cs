@@ -37,6 +37,7 @@ public sealed partial class App : Application
                 loggerFactory.CreateLogger<ViewerLink>());
             var viewModel = new MainWindowViewModel(
                 ImportService.CreateDefault(loggerFactory),
+                new ClashService(loggerFactory.CreateLogger<ClashService>()),
                 new PlatformServices(
                     new StorageFilePickerService(window),
                     new SystemFileRevealer(loggerFactory.CreateLogger<SystemFileRevealer>()),

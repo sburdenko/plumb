@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using Plumb.App.Platform;
 using Plumb.App.Screens.Model;
+using Plumb.App.Screens.Model.Clashes;
+using Plumb.Core.Clashes;
 using Plumb.App.Screens.Model.Tree;
 using Plumb.App.Screens.Model.Viewport;
 using Plumb.App.Shell;
@@ -135,9 +137,42 @@ public sealed class LoadedViewModelTests
         Assert.That(viewer.Opens, Is.EqualTo(new (string, string?)[] { ("/m/House.plumb", "L2") }));
     }
 
-    private static LoadedViewModel Create(PackageState package, FakeViewerLink? viewer = null) =>
+    [Test]
+    public void TheTreeIsShownUntilClashesAreChosen()
+    {
+        var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()));
+        Assert.That(loaded.Panel, Is.EqualTo(ModelPanel.Tree));
+
+        loaded.ShowClashesCommand.Execute(null);
+        Assert.That((loaded.IsTreeShown, loaded.IsClashesShown), Is.EqualTo((false, true)));
+
+        loaded.ShowTreeCommand.Execute(null);
+        Assert.That(loaded.Panel, Is.EqualTo(ModelPanel.Tree));
+    }
+
+    [Test]
+    public async Task ChoosingAClashSelectsItsElementInTheTreeAndTheViewer()
+    {
+        var viewer = new FakeViewerLink();
+        var service = new FakeClashService { Next = new ClashResult.Found([new Clash("W1", "D2", 0.1f, System.Numerics.Vector3.Zero)], TimeSpan.Zero) };
+        var loaded = Create(new PackageState.Saved("/m/House.plumb", new GeometryState.Built()), viewer, service);
+        loaded.Clashes.FirstQuery = "IfcWall";
+        loaded.Clashes.SecondQuery = "IfcDoor";
+        await loaded.Clashes.FindCommand.ExecuteAsync(null);
+        var found = (ClashesFoundViewModel)loaded.Clashes.State;
+
+        found.SelectedRow = found.Rows.Single();
+
+        Assert.That(loaded.SelectedName, Is.EqualTo("Wall A"));
+        Assert.That(viewer.Shown[^1], Is.EqualTo(("/m/House.plumb", (string?)"W1")));
+    }
+
+    private static LoadedViewModel Create(PackageState package, FakeViewerLink? viewer = null, FakeClashService? clashes = null) =>
         new(new LoadedModel(new ImportResult.Success(Model, TimeSpan.FromSeconds(3), package), "/m/House.ifc", OpenedPackage: false, TimeSpan.FromMilliseconds(1234)),
-            Open, new PlatformServices(new NoPicker(), new NoRevealer(), viewer ?? new FakeViewerLink(), new FakeClipboard()), TimeProvider.System);
+            Open,
+            new PlatformServices(new NoPicker(), new NoRevealer(), viewer ?? new FakeViewerLink(), new FakeClipboard()),
+            clashes ?? new FakeClashService(),
+            TimeProvider.System);
 
     private sealed class NoPicker : IFilePickerService
     {

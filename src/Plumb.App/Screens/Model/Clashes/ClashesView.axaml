@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:clashes="using:Plumb.App.Screens.Model.Clashes"
+             xmlns:filter="using:Plumb.App.Screens.Model.Filter"
+             xmlns:controls="using:Plumb.App.Controls"
+             x:Class="Plumb.App.Screens.Model.Clashes.ClashesView"
+             x:DataType="clashes:ClashesViewModel">
+    <UserControl.Styles>
+        <Style Selector="ListBox.clashes">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="ListBox.clashes ListBoxItem">
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="ListBox.clashes ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Plumb.RowHoverBrush}" />
+        </Style>
+        <Style Selector="ListBox.clashes ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource Plumb.FillPressedBrush}" />
+        </Style>
+        <Style Selector="TextBlock.name">
+            <Setter Property="Foreground" Value="{StaticResource Plumb.TextTreeBrush}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="filter:FilterMatchedViewModel">
+            <TextBlock Classes="muted numbers" FontSize="12" Text="{Binding Text}" />
+        </DataTemplate>
+        <DataTemplate DataType="filter:FilterRejectedViewModel">
+            <TextBlock FontSize="12" Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="14,14,14,12" Spacing="8">
+            <TextBlock Classes="caps" Text="CLASHES" Margin="0,0,0,4" />
+
+            <TextBlock Classes="caps muted" FontSize="11" Text="FIRST GROUP" />
+            <TextBox Classes="filter" PlaceholderText="duct, IfcWall, Size ~ 1150" Text="{Binding FirstQuery}" />
+            <ContentControl Content="{Binding FirstStatus}" />
+
+            <TextBlock Classes="caps muted" FontSize="11" Text="SECOND GROUP" Margin="0,6,0,0" />
+            <TextBox Classes="filter" PlaceholderText="pipe, IfcBeam, FireRating = REI 90" Text="{Binding SecondQuery}" />
+            <ContentControl Content="{Binding SecondStatus}" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                <Button Classes="primary" Content="Find clashes" Command="{Binding FindCommand}" />
+                <Button Classes="secondary" Content="Cancel" Command="{Binding FindCancelCommand}" />
+            </StackPanel>
+        </StackPanel>
+
+        <Rectangle DockPanel.Dock="Top" Height="1" Fill="{StaticResource Plumb.RuleBrush}" />
+
+        <ContentControl Content="{Binding State}">
+            <ContentControl.DataTemplates>
+                <DataTemplate DataType="clashes:ClashesIdleViewModel">
+                    <TextBlock Margin="14" Classes="muted" FontSize="13" LineHeight="19" TextWrapping="Wrap" Text="{Binding Hint}" />
+                </DataTemplate>
+                <DataTemplate DataType="clashes:ClashesSearchingViewModel">
+                    <StackPanel Margin="14" Spacing="10">
+                        <ProgressBar IsIndeterminate="True" Height="3" MinHeight="3" Foreground="{StaticResource Plumb.AccentBrush}" />
+                        <TextBlock Classes="muted" FontSize="13" Text="{Binding Step}" />
+                    </StackPanel>
+                </DataTemplate>
+                <DataTemplate DataType="clashes:ClashesNoneViewModel">
+                    <TextBlock Margin="14" Classes="muted" FontSize="13" LineHeight="19" TextWrapping="Wrap" Text="{Binding Text}" />
+                </DataTemplate>
+                <DataTemplate DataType="clashes:ClashesFailedViewModel">
+                    <TextBlock Margin="14" FontSize="13" LineHeight="19" TextWrapping="Wrap" Text="{Binding Message}"
+                               Foreground="{StaticResource Plumb.AccentOnDarkBrush}" />
+                </DataTemplate>
+                <DataTemplate DataType="clashes:ClashesUnavailableViewModel">
+                    <StackPanel Margin="14" Spacing="10">
+                        <controls:LucideIcon HorizontalAlignment="Left" Data="{StaticResource Icon.TriangleAlert}" Size="20"
+                                             Foreground="{StaticResource Plumb.AccentBrush}" />
+                        <TextBlock Classes="dim" FontSize="13" LineHeight="19" TextWrapping="Wrap" Text="{Binding Reason}" />
+                    </StackPanel>
+                </DataTemplate>
+                <DataTemplate DataType="clashes:ClashesFoundViewModel">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Margin="14,12,14,6" Classes="muted numbers" FontSize="12" Text="{Binding Summary}" />
+                        <ListBox Classes="clashes" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="clashes:ClashRowViewModel">
+                                    <Grid ColumnDefinitions="64,*" RowDefinitions="Auto,Auto" ToolTip.Tip="{Binding Description}">
+                                        <TextBlock Grid.RowSpan="2" Classes="numbers" FontWeight="SemiBold" FontSize="13"
+                                                   Foreground="{StaticResource Plumb.AccentOnDarkBrush}" Text="{Binding Penetration}" />
+                                        <TextBlock Grid.Column="1" Classes="name" FontSize="13" Text="{Binding FirstName}" />
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Classes="name" FontSize="13">
+                                            <Run Text="×" Foreground="{StaticResource Plumb.TextMutedBrush}" />
+                                            <Run Text="{Binding SecondName}" />
+                                        </TextBlock>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </DataTemplate>
+            </ContentControl.DataTemplates>
+        </ContentControl>
+    </DockPanel>
+</UserControl>

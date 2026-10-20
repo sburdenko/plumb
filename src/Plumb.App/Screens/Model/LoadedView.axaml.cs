@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace Plumb.App.Screens.Model;
 
@@ -26,7 +27,7 @@ public sealed partial class LoadedView : UserControl
         base.OnDetachedFromVisualTree(e);
     }
 
-    /// <summary>⌘F on macOS, Ctrl+F elsewhere: the platform's command modifier with F.</summary>
+    /// <summary>⌘F on macOS, Ctrl+F elsewhere: the platform's command modifier with F. Brings the tree back first.</summary>
     private void FocusFilterOnFind(object? sender, KeyEventArgs e)
     {
         var command = Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers ?? KeyModifiers.Control;
@@ -35,8 +36,21 @@ public sealed partial class LoadedView : UserControl
             return;
         }
 
+        e.Handled = true;
+        if (DataContext is LoadedViewModel { IsTreeShown: false } loaded)
+        {
+            loaded.ShowTreeCommand.Execute(null);
+            // The box becomes visible on the next layout pass and cannot take focus before it.
+            Dispatcher.UIThread.Post(FocusFilter, DispatcherPriority.Loaded);
+            return;
+        }
+
+        FocusFilter();
+    }
+
+    private void FocusFilter()
+    {
         FilterBox.Focus();
         FilterBox.SelectAll();
-        e.Handled = true;
     }
 }
